@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>gaewynn</Authors>
+    <Company>Sonata</Company>
+    <Description>Sonata.Security</Description>
+    <Copyright>Copyright @ 2018 Sonata</Copyright>
+    <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Gaewynn/Sonata.Security</PackageProjectUrl>
+    <PackageIconUrl>https://raw.githubusercontent.com/gaewynn/Sonata.Diagnostics/master/NuGet/sonata-security.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/Gaewynn/Sonata.Security</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <PackageTags>gaewynn sonata security</PackageTags>
+    <NeutralLanguage>English (United States)</NeutralLanguage>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Sonata.Diagnostics" Version="1.0.0" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="4.4.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="alice.tuprolog">
+      <HintPath>Libs\alice.tuprolog.dll</HintPath>
+    </Reference>
+    <Reference Include="IKVM.OpenJDK.Core">
+      <HintPath>Libs\IKVM.OpenJDK.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="IKVM.Runtime">
+      <HintPath>Libs\IKVM.Runtime.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

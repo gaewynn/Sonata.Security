@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>Sonata.Security</id>
+    <version>$version$</version>
+    <title>Sonata.Security</title>
+    <authors>gaewynn</authors>
+    <owners>Sonata</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://opensource.org/licenses/MIT</licenseUrl>
+    <projectUrl>https://github.com/Gaewynn/Sonata.Security</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/gaewynn/Sonata.Security/master/NuGet/sonata-security.png</iconUrl>
+    <description>Sonata.Security</description>
+    <summary></summary>
+    <copyright>Copyright @ 2018 Sonata</copyright>
+	<tags>gaewynn sonata security</tags>
+    <language>en-US</language>
+    <dependencies>
+      <dependency id="Sonata.Diagnostics" version="1.0.0" />
+      <dependency id="System.Security.Principal.Windows" version="4.5.0-preview1-26216-02" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src=".\Sonata.Security\bin\$configuration$\netstandard2.0\Sonata.Security.dll" target="Sonata.Security.dll" />
+  </files>
+</package>
