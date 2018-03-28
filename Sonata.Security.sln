@@ -3,7 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sonata.Security", "Sonata.Security\Sonata.Security.csproj", "{AA44FD37-8942-4BAB-AF0E-455BA23792AC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sonata.Security", "Sonata.Security\Sonata.Security.csproj", "{AA44FD37-8942-4BAB-AF0E-455BA23792AC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Sonata.Security.Tests", "Sonata.Security.Tests\Sonata.Security.Tests.csproj", "{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{A305DBD1-9F9B-4466-AC4A-03D8A10CCB2E}"
+	ProjectSection(SolutionItems) = preProject
+		NuGet\Build.bat = NuGet\Build.bat
+		NuGet\sonata-security.png = NuGet\sonata-security.png
+		NuGet\Sonata.Security 1.1.0.nuspec = NuGet\Sonata.Security 1.1.0.nuspec
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +24,10 @@ Global
 		{AA44FD37-8942-4BAB-AF0E-455BA23792AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA44FD37-8942-4BAB-AF0E-455BA23792AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA44FD37-8942-4BAB-AF0E-455BA23792AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
