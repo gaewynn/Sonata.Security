@@ -1,10 +1,11 @@
 using alice.tuprolog;
-using Sonata.Security.Permissions;
+using Sonata.Core.Extensions;
+using Sonata.Security.Extensions;
 using Xunit;
 
 namespace Sonata.Security.Tests.Permissions
 {
-    public class PermissionExtensionTests
+	public class PermissionExtensionTests
     {
         [Fact]
         public void AsTermReturnsUnderscoreIfArgIsNull()
@@ -36,7 +37,7 @@ namespace Sonata.Security.Tests.Permissions
         [Fact]
         public void AsQuotedStringPropagatesNull()
         {
-            var actual = ((string)null).AsQuotedString();
+            var actual = ((string)null).Quote();
 
             Assert.Null(actual);
         }
@@ -44,7 +45,7 @@ namespace Sonata.Security.Tests.Permissions
         [Fact]
         public void AsQuotedStringReturnsNullWhenArgIsWhitespace()
         {
-            var actual = " \t\r\n".AsQuotedString();
+            var actual = " \t\r\n".Quote();
 
             Assert.Null(actual);
         }
@@ -52,7 +53,7 @@ namespace Sonata.Security.Tests.Permissions
         [Fact]
         public void AsQuotedStringSurroundsStringWithSingleQuotes()
         {
-            var actual = "test".AsQuotedString();
+            var actual = "test".Quote();
 
             Assert.Equal(@"'test'", actual);
         }

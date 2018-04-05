@@ -2,10 +2,9 @@
 //	The Sonata.Security namespace defines a principal object that represents the security context under which code is running.
 #endregion
 
+using Sonata.Security.Principal;
 using System;
 using System.Collections.Generic;
-using Sonata.Diagnostics.Logs;
-using Sonata.Security.Principal;
 
 namespace Sonata.Security
 {
@@ -71,7 +70,6 @@ namespace Sonata.Security
 				return;
 
 			Console.WriteLine($"{DateTime.Now:HH:mm:ss} - {message}");
-			TechnicalLog.Debug(typeof(SecurityProvider), message);
 		}
 		
 		#endregion
