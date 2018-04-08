@@ -26,11 +26,11 @@ namespace Sonata.Security.Permissions
 
 		#region Members
 
-		private readonly string _factsFileFullName;
-		private readonly string _rulesFileFullName;
 		protected string Entity;
 		protected Term PermissionCheck;
 		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
+		private readonly string _factsFileFullName;
+		private readonly string _rulesFileFullName;
 
 		#endregion
 

@@ -1,159 +1,157 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using alice.tuprolog;
+﻿using alice.tuprolog;
 using Sonata.Security.Extensions;
 using Sonata.Security.Permissions;
+using System;
+using System.Linq;
 using Xunit;
 
 namespace Sonata.Security.Tests.Permissions
 {
-    public class PermissionProviderTests
-    {
-        [Fact]
-        public void PrologStructCanBeSerializedAsString()
-        {
-            var arguments = new[] { "argument1", "argument2", null }
-                .Select(arg => arg.AsTerm())
-                .ToArray();
+	public class PermissionProviderTests
+	{
+		[Fact]
+		public void PrologStructCanBeSerializedAsString()
+		{
+			var arguments = new[] { "argument1", "argument2", null }
+				.Select(arg => arg.AsTerm())
+				.ToArray();
 
-            var goal = new Struct("authorisation", arguments);
+			var goal = new Struct("authorisation", arguments);
 
-            Assert.Equal("authorisation(argument1,argument2, _)", goal.toString());
-        }
+			Assert.Equal("authorisation(argument1,argument2, _)", goal.toString());
+		}
 
-        public class PermissionProviderTestBench : IDisposable
-        {
-            protected readonly string _factsFilePath;
-            protected readonly string _rulesFilePath;
-            protected readonly PermissionProvider _provider;
+		public class PermissionProviderTestBench : IDisposable
+		{
+			protected readonly string FactsFilePath;
+			protected readonly string RulesFilePath;
+			protected readonly PermissionProvider Provider;
 
-            public PermissionProviderTestBench()
-            {
-                _factsFilePath = System.IO.Path.GetTempFileName();
-                _rulesFilePath = System.IO.Path.GetTempFileName();
-                _provider = new PermissionProvider(_factsFilePath, _rulesFilePath);
-            }
+			public PermissionProviderTestBench()
+			{
+				FactsFilePath = System.IO.Path.GetTempFileName();
+				RulesFilePath = System.IO.Path.GetTempFileName();
+				Provider = new PermissionProvider(FactsFilePath, RulesFilePath);
+			}
 
-            private void ReleaseUnmanagedResources()
-            {
-                if (_factsFilePath != null)
-                {
-                    System.IO.File.Delete(_factsFilePath);
-                }
-                if (_rulesFilePath != null)
-                {
-                    System.IO.File.Delete(_rulesFilePath);
-                }
-            }
+			private void ReleaseUnmanagedResources()
+			{
+				if (FactsFilePath != null)
+				{
+					System.IO.File.Delete(FactsFilePath);
+				}
+				if (RulesFilePath != null)
+				{
+					System.IO.File.Delete(RulesFilePath);
+				}
+			}
 
-            public void Dispose()
-            {
-                ReleaseUnmanagedResources();
-                GC.SuppressFinalize(this);
-            }
+			public void Dispose()
+			{
+				ReleaseUnmanagedResources();
+				GC.SuppressFinalize(this);
+			}
 
-            ~PermissionProviderTestBench()
-            {
-                ReleaseUnmanagedResources();
-            }
-        }
+			~PermissionProviderTestBench()
+			{
+				ReleaseUnmanagedResources();
+			}
+		}
 
-        public class FactsTests : PermissionProviderTestBench
-        {
-            [Fact]
-            public void AddFactAddsANewFactToTheFile()
-            {
-                _provider.Fetch();
+		public class FactsTests : PermissionProviderTestBench
+		{
+			[Fact]
+			public void AddFactAddsANewFactToTheFile()
+			{
+				Provider.Fetch();
 
-                const string fact = "admin(xyz).";
-                _provider.AddFact(fact);
+				const string fact = "admin(xyz).";
+				Provider.AddFact(fact);
 
-                var lastFact = System.IO.File.ReadAllLines(_factsFilePath).LastOrDefault();
-                Assert.Equal(fact, lastFact);
-                Assert.True(_provider.RunRule("admin", "xyz"));
-            }
+				var lastFact = System.IO.File.ReadAllLines(FactsFilePath).LastOrDefault();
+				Assert.Equal(fact, lastFact);
+				Assert.True(Provider.Eval("admin", "xyz"));
+			}
 
-            [Fact]
-            public void DuplicateAFactDoesNotChangeTheFile()
-            {
-                _provider.Fetch();
+			[Fact]
+			public void DuplicateAFactDoesNotChangeTheFile()
+			{
+				Provider.Fetch();
 
-                const string fact = "admin(xyz).";
-                _provider.AddFact(fact);
-                _provider.AddFact(fact);
+				const string fact = "admin(xyz).";
+				Provider.AddFact(fact);
+				Provider.AddFact(fact);
 
-                var facts = System.IO.File.ReadAllLines(_factsFilePath);
-                var duplicates = facts
-                    .GroupBy(f => f)
-                    .Where(factsGroup => factsGroup.Count() > 1)
-                    .Select(factsGroup => factsGroup.Key);
+				var facts = System.IO.File.ReadAllLines(FactsFilePath);
+				var duplicates = facts
+					.GroupBy(f => f)
+					.Where(factsGroup => factsGroup.Count() > 1)
+					.Select(factsGroup => factsGroup.Key);
 
-                Assert.Empty(duplicates);
-                Assert.Contains(fact, facts);
-                Assert.True(_provider.RunRule("admin", "xyz"));
-            }
+				Assert.Empty(duplicates);
+				Assert.Contains(fact, facts);
+				Assert.True(Provider.Eval("admin", "xyz"));
+			}
 
-            [Fact]
-            public void RemoveFactRemovesTheFact()
-            {
-                var initialContent = new[] { "admin(abc).", "admin(def).", "admin(xyz)." };
-                System.IO.File.WriteAllLines(_factsFilePath, initialContent);
+			[Fact]
+			public void RemoveFactRemovesTheFact()
+			{
+				var initialContent = new[] { "admin(abc).", "admin(def).", "admin(xyz)." };
+				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
 
-                _provider.Fetch();
+				Provider.Fetch();
 
-                var factToRemove = "admin(def).";
+				var factToRemove = "admin(def).";
 
-                _provider.RemoveFact(factToRemove);
+				Provider.RemoveFact(factToRemove);
 
-                var facts = System.IO.File.ReadAllLines(_factsFilePath);
+				var facts = System.IO.File.ReadAllLines(FactsFilePath);
 
-                Assert.Equal(2, facts.Length);
-                Assert.DoesNotContain(factToRemove, facts);
-                Assert.False(_provider.RunRule("admin", "def"));
-            }
-        }
+				Assert.Equal(2, facts.Length);
+				Assert.DoesNotContain(factToRemove, facts);
+				Assert.False(Provider.Eval("admin", "def"));
+			}
+		}
 
-        public class RuntimeTests : PermissionProviderTestBench
-        {
-            [Fact]
-            public void PrologEngineIsCreatedAfterLoad()
-            {
-                _provider.Fetch();
+		public class RuntimeTests : PermissionProviderTestBench
+		{
+			[Fact]
+			public void PrologEngineIsCreatedAfterLoad()
+			{
+				Provider.Fetch();
 
-                Assert.NotNull(_provider.PrologEngine);
-            }
+				Assert.NotNull(Provider.PrologEngine);
+			}
 
-            [Fact]
-            public void PrologFactsAreLoadedInitially()
-            {
-                var initialContent = new[] { "answerToLifeTheUniverseAndEverything(42)."};
-                System.IO.File.WriteAllLines(_factsFilePath, initialContent);
+			[Fact]
+			public void PrologFactsAreLoadedInitially()
+			{
+				var initialContent = new[] { "answerToLifeTheUniverseAndEverything(42)." };
+				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
 
-                _provider.Fetch();
+				Provider.Fetch();
 
-                Assert.True(_provider.RunRule("answerToLifeTheUniverseAndEverything", (string)null));
-            }
-        }
+				Assert.True(Provider.Eval("answerToLifeTheUniverseAndEverything", (string)null));
+			}
+		}
 
-        public class AuthorisationTests : PermissionProviderTestBench
-        {
-            [Fact]
-            public void IsAuthorisedReturnsTrueIfRuleExistsInProlog()
-            {
-                var ruleset = new[] { $"{PermissionProvider.DefaultRuleName}(User,_,_,_):-isUser(User)." };
-                System.IO.File.WriteAllLines(_rulesFilePath, ruleset);
+		public class AuthorisationTests : PermissionProviderTestBench
+		{
+			[Fact]
+			public void IsAuthorisedReturnsTrueIfRuleExistsInProlog()
+			{
+				var ruleset = new[] { $"{PermissionProvider.DefaultRuleName}(User,_,_,_):-isUser(User)." };
+				System.IO.File.WriteAllLines(RulesFilePath, ruleset);
 
-                var facts = new[] { "isUser(alice).", "isUser(bob)." };
-                System.IO.File.WriteAllLines(_factsFilePath, facts);
+				var facts = new[] { "isUser(alice).", "isUser(bob)." };
+				System.IO.File.WriteAllLines(FactsFilePath, facts);
 
-                _provider.Fetch();
+				Provider.Fetch();
 
-                var request = new PermissionRequest { User = "bob" };
+				var request = new PermissionRequest { User = "bob" };
 
-                Assert.True(_provider.IsAuthorized(request));
-            }
-        }
-    }
+				Assert.True(Provider.IsAuthorized(request));
+			}
+		}
+	}
 }
