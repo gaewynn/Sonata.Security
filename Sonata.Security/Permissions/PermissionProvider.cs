@@ -30,7 +30,7 @@ namespace Sonata.Security.Permissions
 		private readonly string _rulesFileFullName;
 		protected string Entity;
 		protected Term PermissionCheck;
-		private readonly List<string> _actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
+		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
 
 		#endregion
 
@@ -55,9 +55,9 @@ namespace Sonata.Security.Permissions
 
 		#region Methods
 
-		public virtual bool RunRule(string ruleName = DefaultRuleName, params string[] arguments)
+		public virtual bool Eval(string ruleName = DefaultRuleName, params string[] arguments)
 		{
-			SecurityProvider.Trace($"Call to {nameof(RunRule)}");
+			SecurityProvider.Trace($"Call to {nameof(Eval)}");
 
 			try
 			{
@@ -306,15 +306,15 @@ namespace Sonata.Security.Permissions
 		public virtual List<string> GetEntityTargetPermissions(PermissionRequest request)
 		{
 			var rights = new List<string>();
-			for (var index = 0; index < _actions.Count; index++)
+			for (var index = 0; index < Actions.Count; index++)
 			{
 				var goal = new Struct(DefaultRuleName, Term.createTerm(request.User.Quote()), Term.createTerm("_"),
 					Term.createTerm(request.Target.Quote()), Term.createTerm(request.Entity.Quote()),
-					Term.createTerm(_actions.ElementAt(index).Quote()));
+					Term.createTerm(Actions.ElementAt(index).Quote()));
 
 				var reponse = PrologEngine.solve(goal);
 				if (reponse.isSuccess())
-					rights.Add(_actions.ElementAt(index));
+					rights.Add(Actions.ElementAt(index));
 			}
 
 			return rights;
