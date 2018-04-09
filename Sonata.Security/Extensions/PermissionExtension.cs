@@ -2,16 +2,17 @@
 //	TODO
 #endregion
 
-using alice.tuprolog;
 using System;
 
 namespace Sonata.Security.Extensions
 {
 	public static class PermissionExtensions
 	{
-		public static Term AsTerm(this string value)
+		public static string AsTerm(this string value)
 		{
-			return Term.createTerm(String.IsNullOrEmpty(value) ? "_" : value);
+			return String.IsNullOrEmpty(value)
+				? "_"
+				: value;
 		}
 	}
 }

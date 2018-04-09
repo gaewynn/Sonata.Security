@@ -1,5 +1,4 @@
-﻿using alice.tuprolog;
-using Sonata.Security.Extensions;
+﻿using Sonata.Security.Extensions;
 using Sonata.Security.Permissions;
 using System;
 using System.Linq;
@@ -16,9 +15,9 @@ namespace Sonata.Security.Tests.Permissions
 				.Select(arg => arg.AsTerm())
 				.ToArray();
 
-			var goal = new Struct("authorisation", arguments);
+			var goal = $"authorisation({String.Join(", ", arguments)}).";
 
-			Assert.Equal("authorisation(argument1,argument2, _)", goal.toString());
+			Assert.Equal("authorisation(argument1, argument2, _).", goal);
 		}
 
 		public class PermissionProviderTestBench : IDisposable
@@ -126,12 +125,18 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void PrologFactsAreLoadedInitially()
 			{
-				var initialContent = new[] { "answerToLifeTheUniverseAndEverything(42)." };
+				var initialContent = new[] { "answerToLifeTheUniverseAndEverything(42).", "collab(afi).", "collab(lma)." };
 				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
 
 				Provider.Fetch();
 
-				Assert.True(Provider.Eval("answerToLifeTheUniverseAndEverything", (string)null));
+				Assert.True(Provider.Eval("answerToLifeTheUniverseAndEverything", "42"));
+				
+				var solveResults = Provider.PrologEngine.GetAllSolutions(null, "collab(Collab)");
+				Assert.True(solveResults.Success);
+				Assert.Equal(2, solveResults.Count);
+				Assert.Equal("afi", solveResults.NextSolution.ElementAt(0).NextVariable.Single(e => e.Name == "Collab").Value);
+				Assert.Equal("lma", solveResults.NextSolution.ElementAt(1).NextVariable.Single(e => e.Name == "Collab").Value);
 			}
 		}
 

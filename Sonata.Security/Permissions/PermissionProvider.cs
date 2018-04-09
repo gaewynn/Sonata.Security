@@ -2,13 +2,12 @@
 //	TODO
 #endregion
 
-using alice.tuprolog;
 using Sonata.Core.Extensions;
 using Sonata.Security.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using jio = java.io;
+using Prolog;
 
 namespace Sonata.Security.Permissions
 {
@@ -27,7 +26,7 @@ namespace Sonata.Security.Permissions
 		#region Members
 
 		protected string Entity;
-		protected Term PermissionCheck;
+		protected string PermissionCheck;
 		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
 		private readonly string _factsFileFullName;
 		private readonly string _rulesFileFullName;
@@ -36,7 +35,7 @@ namespace Sonata.Security.Permissions
 
 		#region Properties
 
-		public Prolog PrologEngine { get; set; }
+		public PrologEngine PrologEngine { get; set; }
 
 		#endregion
 
@@ -61,20 +60,18 @@ namespace Sonata.Security.Permissions
 
 			try
 			{
-				var goal = new Struct(ruleName, arguments.Select(arg => arg.AsTerm()).ToArray());
+				var goal = $"{ruleName}({String.Join(", ", arguments.Select(arg => arg.AsTerm()))}).";
 				if (SecurityConfiguration.IsDebugModeEnabled)
-				{
-					SecurityProvider.Trace($"   Running predicate: {goal.toString()}");
-				}
-				var result = PrologEngine.solve(goal);
-				return result.isSuccess();
+					SecurityProvider.Trace($"   Running predicate: {goal}");
+
+				var result = PrologEngine.GetFirstSolution(goal);
+				return result.Solved;
 			}
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-				if (ex is MalformedGoalException malFormedGoalException)
-					malFormedGoalException.printStackTrace();
 			}
+
 			return false;
 		}
 
@@ -137,14 +134,12 @@ namespace Sonata.Security.Permissions
 
 				SecurityProvider.Trace("   Running predicate...");
 
-				var reponse = PrologEngine.solve(goal);
-				return reponse.isSuccess();
+				var reponse = PrologEngine.GetFirstSolution(goal);
+				return reponse.Solved;
 			}
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-				if (ex is MalformedGoalException malFormedGoalException)
-					malFormedGoalException.printStackTrace();
 			}
 
 			return false;
@@ -176,41 +171,28 @@ namespace Sonata.Security.Permissions
 						throw new ArgumentException(key + " can not be empty or whitespace.", key);
 				}
 
+
 				QuotePermissionRequest(ref request);
 				request.Target = "Collab";
-				Term goal = BuildGenericPermissionQuestion(request);
+				var goal = BuildGenericPermissionQuestion(request);
 
-				SecurityProvider.Trace(goal == null 
-					? "   Built goal is null: no predicate to run" 
+				SecurityProvider.Trace(goal == null
+					? "   Built goal is null: no predicate to run"
 					: "   Running predicate...");
 
-				var solveResult = PrologEngine.solve(goal);
+				var solveResults = PrologEngine.GetAllSolutions(null, goal);
 				var returnedCollabs = new List<string>();
-
-				if (!solveResult.isSuccess())
+				
+				if (!solveResults.Success)
 					return returnedCollabs;
 
-				while (solveResult.isSuccess())
-				{
-					returnedCollabs.Add(solveResult.getTerm("Collab")?.ToString()?.Trim('\''));
-					try
-					{
-						solveResult = PrologEngine.solveNext();
-					}
-					catch (NoMoreSolutionException ex)
-					{
-						SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-						break;
-					}
-				}
+				returnedCollabs.AddRange(solveResults.NextSolution.Select(solution => solution.NextVariable.Single(e => e.Name == "Collab").Value));
 
 				return returnedCollabs;
 			}
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-				if (ex is MalformedGoalException malFormedGoalException)
-					malFormedGoalException.printStackTrace();
 			}
 
 			return null;
@@ -244,13 +226,13 @@ namespace Sonata.Security.Permissions
 
 				QuotePermissionRequest(ref request);
 				request.Action = "A";
-				Term goal = BuildGenericPermissionQuestion(request);
+				var goal = BuildGenericPermissionQuestion(request);
 
-				SecurityProvider.Trace(goal == null 
-					? "   Built goal is null: no predicate to run" 
+				SecurityProvider.Trace(goal == null
+					? "   Built goal is null: no predicate to run"
 					: "   Running predicate...");
 
-				var solveResult = PrologEngine.solve(goal);
+				var solveResults = PrologEngine.GetAllSolutions(null, goal);
 
 				// Aucune Permission
 				var returnedPermission = new Permission
@@ -259,35 +241,26 @@ namespace Sonata.Security.Permissions
 					Entity = request.Entity
 				};
 
-				if (!solveResult.isSuccess())
+				if (!solveResults.Success)
 					return returnedPermission;
 
-				while (solveResult.isSuccess())
+				foreach (var solution in solveResults.NextSolution)
 				{
-					try
+					var action = solution.NextVariable.Single(e => e.Name == request.Action).Value;
+					switch (action)
 					{
-						switch (solveResult.getTerm(request.Action).toString())
-						{
-							case ActionLecture:
-								returnedPermission.AccessTypes |= AccessTypes.Read;
-								break;
-							case ActionAjouter:
-								returnedPermission.AccessTypes |= AccessTypes.Create;
-								break;
-							case ActionModifier:
-								returnedPermission.AccessTypes |= AccessTypes.Update;
-								break;
-							case ActionSupprimer:
-								returnedPermission.AccessTypes |= AccessTypes.Delete;
-								break;
-						}
-
-						solveResult = PrologEngine.solveNext();
-					}
-					catch (NoMoreSolutionException ex)
-					{
-						SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-						break;
+						case ActionLecture:
+							returnedPermission.AccessTypes |= AccessTypes.Read;
+							break;
+						case ActionAjouter:
+							returnedPermission.AccessTypes |= AccessTypes.Create;
+							break;
+						case ActionModifier:
+							returnedPermission.AccessTypes |= AccessTypes.Update;
+							break;
+						case ActionSupprimer:
+							returnedPermission.AccessTypes |= AccessTypes.Delete;
+							break;
 					}
 				}
 
@@ -296,8 +269,6 @@ namespace Sonata.Security.Permissions
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-				if (ex is MalformedGoalException malFormedGoalException)
-					malFormedGoalException.printStackTrace();
 			}
 
 			return null;
@@ -308,12 +279,15 @@ namespace Sonata.Security.Permissions
 			var rights = new List<string>();
 			for (var index = 0; index < Actions.Count; index++)
 			{
-				var goal = new Struct(DefaultRuleName, Term.createTerm(request.User.Quote()), Term.createTerm("_"),
-					Term.createTerm(request.Target.Quote()), Term.createTerm(request.Entity.Quote()),
-					Term.createTerm(Actions.ElementAt(index).Quote()));
-
-				var reponse = PrologEngine.solve(goal);
-				if (reponse.isSuccess())
+				var goal = $"{DefaultRuleName}(" +
+						   $"{request.User.Quote()}, " +
+						   "\"_\", " +
+						   $"{request.Target.Quote()}, " +
+						   $"{request.Entity.Quote()}, " +
+						   $"{Actions.ElementAt(index).Quote()}).";
+				
+				var reponse = PrologEngine.GetFirstSolution(goal);
+				if (reponse.Solved)
 					rights.Add(Actions.ElementAt(index));
 			}
 
@@ -347,37 +321,25 @@ namespace Sonata.Security.Permissions
 				request.Entity = "E";
 				request.Target = "T";
 
-				Term goal = BuildGenericPermissionQuestion(request);
+				var goal = BuildGenericPermissionQuestion(request);
 
-				SecurityProvider.Trace(goal == null 
-					? "   Built goal is null: no predicate to run" 
+				SecurityProvider.Trace(goal == null
+					? "   Built goal is null: no predicate to run"
 					: "   Running predicate...");
 
-				var solveResult = PrologEngine.solve(goal);
+				var solveResults = PrologEngine.GetAllSolutions(null, goal);
 
 				// Aucune Permission
 				var returnedPermission = new List<Permission>();
-				if (!solveResult.isSuccess())
+				if (!solveResults.Success)
 					return returnedPermission;
 
-				while (solveResult.isSuccess())
+				returnedPermission.AddRange(solveResults.NextSolution.Select(solution => new Permission
 				{
-					try
-					{
-						solveResult = PrologEngine.solveNext();
-						returnedPermission.Add(new Permission
-						{
-							Target = solveResult.getTerm(request.Target).toString(),
-							Entity = solveResult.getTerm(request.Entity).toString(),
-							AccessTypes = solveResult.getTerm(request.Action)?.toString().GetEnumStringValue<AccessTypes>() ?? AccessTypes.None
-						});
-					}
-					catch (NoMoreSolutionException ex)
-					{
-						SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-						break;
-					}
-				}
+					Target = solution.NextVariable.Single(e => e.Name == request.Target).Value,
+					Entity = solution.NextVariable.Single(e => e.Name == request.Entity).Value,
+					AccessTypes = solution.NextVariable.SingleOrDefault(e => e.Name == request.Action)?.Value.GetEnumStringValue<AccessTypes>() ?? AccessTypes.None
+				}));
 
 				//Aggregation des accesstypes
 				return returnedPermission
@@ -403,8 +365,6 @@ namespace Sonata.Security.Permissions
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-				if (ex is MalformedGoalException malFormedGoalException)
-					malFormedGoalException.printStackTrace();
 			}
 
 			return null;
@@ -416,30 +376,26 @@ namespace Sonata.Security.Permissions
 			LoadEngine();
 		}
 
-		public virtual Struct BuildGenericPermissionQuestion(PermissionRequest request)
+		public virtual string BuildGenericPermissionQuestion(PermissionRequest request)
 		{
 			SecurityProvider.Trace($"Call to {nameof(BuildGenericPermissionQuestion)}");
 
 			try
 			{
-				var predicate = new Struct(DefaultRuleName,
-					request.User.AsTerm(),
-					request.Target.AsTerm(),
-					request.Entity.AsTerm(),
-					request.Action.AsTerm());
+				var predicate = $"{DefaultRuleName}(" +
+								$"{request.User.AsTerm()}" +
+								$"{request.Target.AsTerm()}" +
+								$"{request.Entity.AsTerm()}" +
+								$"{request.Action.AsTerm()}";
 
 				if (SecurityConfiguration.IsDebugModeEnabled)
-				{
-					SecurityProvider.Trace($"   Building predicate: {predicate.toString()}");
-				}
+					SecurityProvider.Trace($"   Building predicate: {predicate}");
 
 				return predicate;
 			}
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-				if (ex is MalformedGoalException malFormedGoalException)
-					malFormedGoalException.printStackTrace();
 			}
 
 			return null;
@@ -462,29 +418,9 @@ namespace Sonata.Security.Permissions
 				// Construction des chemins relatifs
 				SecurityProvider.Trace(_rulesFileFullName + " --- " + _factsFileFullName);
 
-				jio.InputStream streamData = new jio.ByteArrayInputStream(System.IO.File.ReadAllBytes(_factsFileFullName));
-				jio.InputStream streamRegles = new jio.ByteArrayInputStream(System.IO.File.ReadAllBytes(_rulesFileFullName));
-
-				var theorieData = new Theory(streamData);
-				var theorieRegles = new Theory(streamRegles);
-
-				//moteur prolog
-				PrologEngine = new Prolog();
-				PrologEngine.setTheory(theorieData);
-				PrologEngine.addTheory(theorieRegles);
-
-				streamData.close();
-				streamRegles.close();
-			}
-			catch (jio.FileNotFoundException fex)
-			{
-				SecurityProvider.Trace($"   Error: {fex.GetFullMessage()}");
-				fex.printStackTrace();
-			}
-			catch (InvalidTheoryException iex)
-			{
-				SecurityProvider.Trace($"   Error: {iex.GetFullMessage()}");
-				iex.printStackTrace();
+				PrologEngine = new PrologEngine(false);
+				PrologEngine.Consult(_factsFileFullName);
+				PrologEngine.Consult(_rulesFileFullName);
 			}
 			catch (Exception ex)
 			{

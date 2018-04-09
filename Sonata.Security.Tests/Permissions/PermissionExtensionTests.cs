@@ -1,4 +1,3 @@
-using alice.tuprolog;
 using Sonata.Core.Extensions;
 using Sonata.Security.Extensions;
 using Xunit;
@@ -10,28 +9,28 @@ namespace Sonata.Security.Tests.Permissions
         [Fact]
         public void AsTermReturnsUnderscoreIfArgIsNull()
         {
-            var expected = Term.createTerm("_");
+            var expected = "_";
             var actual = ((string) null).AsTerm();
 
-            Assert.Equal(expected.toString(), actual.toString());
+            Assert.Equal(expected, actual);
         }
 
         [Fact]
         public void AsTermReturnsUnderscoreIfArgIsEmpty()
         {
-            var expected = Term.createTerm("_");
+            var expected = "_";
             var actual = "".AsTerm();
 
-            Assert.Equal(expected.toString(), actual.toString());
+            Assert.Equal(expected, actual);
         }
 
         [Fact]
         public void AsTermReturnsTermIfArgIsNotEmpty()
         {
-            var expected = Term.createTerm("xyz");
+            var expected = "xyz";
             var actual = "xyz".AsTerm();
 
-            Assert.Equal(expected.toString(), actual.toString());
+            Assert.Equal(expected, actual);
         }
 
         [Fact]
@@ -47,7 +46,7 @@ namespace Sonata.Security.Tests.Permissions
         {
             var actual = " \t\r\n".Quote();
 
-            Assert.Null(actual);
+            Assert.Equal("' \t\r\n'", actual);
         }
 
         [Fact]
