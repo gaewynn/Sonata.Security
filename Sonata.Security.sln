@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{A305DBD1
 		NuGet\Sonata.Security 3.0.0.nuspec = NuGet\Sonata.Security 3.0.0.nuspec
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSProlog.Core", "CSProlog\CSProlog.Core.csproj", "{1688D64D-27FA-4E8E-960E-EF70F4204AD1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSProlog.Core", "CSProlog\CSProlog.Core.csproj", "{32CDABDE-C035-4AB6-B1DF-A4194155AF93}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,10 +30,10 @@ Global
 		{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8E36B82F-1CE6-4720-B0BB-6EAE8BE3723D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1688D64D-27FA-4E8E-960E-EF70F4204AD1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1688D64D-27FA-4E8E-960E-EF70F4204AD1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1688D64D-27FA-4E8E-960E-EF70F4204AD1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1688D64D-27FA-4E8E-960E-EF70F4204AD1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32CDABDE-C035-4AB6-B1DF-A4194155AF93}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32CDABDE-C035-4AB6-B1DF-A4194155AF93}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32CDABDE-C035-4AB6-B1DF-A4194155AF93}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32CDABDE-C035-4AB6-B1DF-A4194155AF93}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
