@@ -19,6 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CSProlog" Version="5.0.0.1" />
     <PackageReference Include="Sonata.Core" Version="1.0.4" />
     <PackageReference Include="Sonata.Diagnostics" Version="2.0.4" />
     <PackageReference Include="System.Security.Principal.Windows" Version="4.4.1" />

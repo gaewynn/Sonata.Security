@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <!--<TargetFramework>net471</TargetFramework>-->
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -15,18 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sonata.Security\Sonata.Security.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="alice.tuprolog">
-      <HintPath>..\Sonata.Security\Libs\alice.tuprolog.dll</HintPath>
-    </Reference>
-    <Reference Include="IKVM.OpenJDK.Core">
-      <HintPath>..\Sonata.Security\Libs\IKVM.OpenJDK.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="IKVM.Runtime">
-      <HintPath>..\Sonata.Security\Libs\IKVM.Runtime.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

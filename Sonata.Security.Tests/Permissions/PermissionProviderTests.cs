@@ -1,5 +1,4 @@
-﻿using alice.tuprolog;
-using Sonata.Security.Extensions;
+﻿using Sonata.Security.Extensions;
 using Sonata.Security.Permissions;
 using System;
 using System.Linq;
@@ -9,17 +8,17 @@ namespace Sonata.Security.Tests.Permissions
 {
 	public class PermissionProviderTests
 	{
-		[Fact]
-		public void PrologStructCanBeSerializedAsString()
-		{
-			var arguments = new[] { "argument1", "argument2", null }
-				.Select(arg => arg.AsTerm())
-				.ToArray();
+		//[Fact]
+		//public void PrologStructCanBeSerializedAsString()
+		//{
+		//	var arguments = new[] { "argument1", "argument2", null }
+		//		.Select(arg => arg.AsTerm())
+		//		.ToArray();
 
-			var goal = new Struct("authorisation", arguments);
+		//	var goal = new Struct("authorisation", arguments);
 
-			Assert.Equal("authorisation(argument1,argument2, _)", goal.toString());
-		}
+		//	Assert.Equal("authorisation(argument1,argument2, _)", goal.toString());
+		//}
 
 		public class PermissionProviderTestBench : IDisposable
 		{
