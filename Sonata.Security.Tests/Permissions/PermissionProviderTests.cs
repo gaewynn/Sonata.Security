@@ -8,18 +8,6 @@ namespace Sonata.Security.Tests.Permissions
 {
 	public class PermissionProviderTests
 	{
-		//[Fact]
-		//public void PrologStructCanBeSerializedAsString()
-		//{
-		//	var arguments = new[] { "argument1", "argument2", null }
-		//		.Select(arg => arg.AsTerm())
-		//		.ToArray();
-
-		//	var goal = new Struct("authorisation", arguments);
-
-		//	Assert.Equal("authorisation(argument1,argument2, _)", goal.toString());
-		//}
-
 		public class PermissionProviderTestBench : IDisposable
 		{
 			protected readonly string FactsFilePath;
@@ -57,7 +45,27 @@ namespace Sonata.Security.Tests.Permissions
 			}
 		}
 
-		public class FactsTests : PermissionProviderTestBench
+	    public class PrologEngineTest : PermissionProviderTestBench
+	    {
+	        [Fact]
+	        public void PrologEngineCanAnswerRequests()
+	        {
+	            Provider.Fetch();
+	            var facts = new[] {"homme(socrate).", "droid(r2d2)."};
+	            var rules = new[] {"mortel(Personne):-homme(Personne)."};
+
+                System.IO.File.WriteAllLines(FactsFilePath, facts);
+                System.IO.File.WriteAllLines(RulesFilePath, rules);
+
+                Provider.Fetch();
+
+                Assert.True(Provider.Eval("mortel", "socrate"));
+                Assert.False(Provider.Eval("mortel", "r2d2"));
+                Assert.True(Provider.Eval("mortel", "Inconnu"));
+            }
+	    }
+
+	    public class FactsTests : PermissionProviderTestBench
 		{
 			[Fact]
 			public void AddFactAddsANewFactToTheFile()

@@ -58,7 +58,7 @@ namespace Sonata.Security.Permissions
             SecurityProvider.Trace($"Call to {nameof(Eval)}");
             try
             {
-                var goal = $"{ruleName}({string.Join(", ", arguments)})";
+                var goal = BuildPredicate(ruleName, arguments);
                 if (SecurityConfiguration.IsDebugModeEnabled)
                 {
                     SecurityProvider.Trace($"   Running predicate: {goal}");
@@ -388,8 +388,11 @@ namespace Sonata.Security.Permissions
 
             try
             {
-                var predicate =
-                    $"{DefaultRuleName}({request.User.AsTerm()}, {request.Target.AsTerm()}, {request.Entity.AsTerm()}, {request.Action.AsTerm()}).";
+                var predicate = BuildPredicate(DefaultRuleName,
+                    request.User,
+                    request.Target,
+                    request.Entity,
+                    request.Action);
 
                 if (SecurityConfiguration.IsDebugModeEnabled)
                 {
@@ -404,6 +407,13 @@ namespace Sonata.Security.Permissions
             }
 
             return null;
+        }
+
+        public virtual string BuildPredicate(string functor, params string[] arguments)
+        {
+            var terms = arguments.Select(arg => arg.AsTerm());
+            var termList = string.Join(", ", terms);
+            return functor + "(" + termList + ").";
         }
 
         protected void QuotePermissionRequest(ref PermissionRequest p)
