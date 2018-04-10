@@ -45,27 +45,27 @@ namespace Sonata.Security.Tests.Permissions
 			}
 		}
 
-	    public class PrologEngineTest : PermissionProviderTestBench
-	    {
-	        [Fact]
-	        public void PrologEngineCanAnswerRequests()
-	        {
-	            Provider.Fetch();
-	            var facts = new[] {"homme(socrate).", "droid(r2d2)."};
-	            var rules = new[] {"mortel(Personne):-homme(Personne)."};
+		public class PrologEngineTest : PermissionProviderTestBench
+		{
+			[Fact]
+			public void PrologEngineCanAnswerRequests()
+			{
+				Provider.Fetch();
+				var facts = new[] {"homme(socrate).", "droid(r2d2)."};
+				var rules = new[] {"mortel(Personne):-homme(Personne)."};
 
-                System.IO.File.WriteAllLines(FactsFilePath, facts);
-                System.IO.File.WriteAllLines(RulesFilePath, rules);
+				System.IO.File.WriteAllLines(FactsFilePath, facts);
+				System.IO.File.WriteAllLines(RulesFilePath, rules);
 
-                Provider.Fetch();
+				Provider.Fetch();
 
-                Assert.True(Provider.Eval("mortel", "socrate"));
-                Assert.False(Provider.Eval("mortel", "r2d2"));
-                Assert.True(Provider.Eval("mortel", "Inconnu"));
-            }
-	    }
+				Assert.True(Provider.Eval("mortel", "socrate"));
+				Assert.False(Provider.Eval("mortel", "r2d2"));
+				Assert.True(Provider.Eval("mortel", "Inconnu"));
+			}
+		}
 
-	    public class FactsTests : PermissionProviderTestBench
+		public class FactsTests : PermissionProviderTestBench
 		{
 			[Fact]
 			public void AddFactAddsANewFactToTheFile()
