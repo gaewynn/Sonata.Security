@@ -8,6 +8,15 @@ namespace Sonata.Security.Tests.Permissions
 {
 	public class PermissionProviderTests
 	{
+		[Fact]
+		public void PrologStructCanBeSerializedAsString()
+		{
+			var goal = PermissionProvider.BuildPredicate("authorisation", "argument1", "argument2", null);
+			const string expected = "authorisation(argument1, argument2, _).";
+
+			Assert.Equal(expected, goal);
+		}
+
 		public class PermissionProviderTestBench : IDisposable
 		{
 			protected readonly string FactsFilePath;
@@ -42,26 +51,6 @@ namespace Sonata.Security.Tests.Permissions
 			~PermissionProviderTestBench()
 			{
 				ReleaseUnmanagedResources();
-			}
-		}
-
-		public class PrologEngineTest : PermissionProviderTestBench
-		{
-			[Fact]
-			public void PrologEngineCanAnswerRequests()
-			{
-				Provider.Fetch();
-				var facts = new[] {"homme(socrate).", "droid(r2d2)."};
-				var rules = new[] {"mortel(Personne):-homme(Personne)."};
-
-				System.IO.File.WriteAllLines(FactsFilePath, facts);
-				System.IO.File.WriteAllLines(RulesFilePath, rules);
-
-				Provider.Fetch();
-
-				Assert.True(Provider.Eval("mortel", "socrate"));
-				Assert.False(Provider.Eval("mortel", "r2d2"));
-				Assert.True(Provider.Eval("mortel", "Inconnu"));
 			}
 		}
 
@@ -122,23 +111,39 @@ namespace Sonata.Security.Tests.Permissions
 
 		public class RuntimeTests : PermissionProviderTestBench
 		{
-			[Fact]
-			public void PrologEngineIsCreatedAfterLoad()
+		    [Fact]
+		    public void PrologEngineCanEvalPredicates()
+		    {
+		        Provider.Fetch();
+		        var facts = new[] { "homme(socrate).", "droid(r2d2)." };
+		        var rules = new[] { "mortel(Personne):-homme(Personne)." };
+
+		        System.IO.File.WriteAllLines(FactsFilePath, facts);
+		        System.IO.File.WriteAllLines(RulesFilePath, rules);
+
+		        Provider.Fetch();
+
+		        Assert.True(Provider.Eval("mortel", "socrate"));
+		        Assert.False(Provider.Eval("mortel", "r2d2"));
+		        Assert.True(Provider.Eval("mortel", "Inconnu"));
+		    }
+
+
+            [Fact]
+			public void PrologEngineCanSolvePredicates()
 			{
-				Provider.Fetch();
-
-				Assert.NotNull(Provider.PrologEngine);
-			}
-
-			[Fact]
-			public void PrologFactsAreLoadedInitially()
-			{
-				var initialContent = new[] { "answerToLifeTheUniverseAndEverything(42)." };
-				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
+				var facts = new[] { "collab(afi).", "collab(lma)." };
+				System.IO.File.WriteAllLines(FactsFilePath, facts);
 
 				Provider.Fetch();
+				
+				var solutions = Provider.Solve("collab", "Collab").ToList();
 
-				Assert.True(Provider.Eval("answerToLifeTheUniverseAndEverything", (string)null));
+				Assert.Equal(2, solutions.Count);
+                Assert.True(solutions.All(s => s.ContainsKey("Collab")));
+			    var collabs = solutions.Select(s => s["Collab"]).ToList();
+                Assert.Contains("afi", collabs);
+                Assert.Contains("lma", collabs);
 			}
 		}
 
