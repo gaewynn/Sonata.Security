@@ -19,7 +19,7 @@ using System.Text;
 
 namespace Prolog
 {
-#if NETSTANDARD
+#if NETSTANDARD2_0
   using ApplicationException = System.Exception;
 #endif
 

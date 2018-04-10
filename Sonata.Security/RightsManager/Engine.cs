@@ -25,7 +25,7 @@ using System.Xml;
 
 namespace Prolog
 {
-#if NETSTANDARD
+#if NETSTANDARD2_0
     using ApplicationException = Exception;
     using Stack = Stack<object>;
 #endif
@@ -370,7 +370,7 @@ namespace Prolog
     static OperatorDescr ColonOpDescr;
     bool halted;
     PredicateCallOptions predicateCallOptions;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     DbCommandSet dbCommandSet;
 #endif
     OpenFiles openFiles;
@@ -486,7 +486,7 @@ namespace Prolog
     bool xmlTrace;
     bool reporting;  // debug (also set by 'trace') || xmlTrace
     bool profiling;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     XmlTextWriter xtw;
     string xmlFile;
     int xmlElCount; // current approximate Number of elements in the XML trace file
@@ -606,7 +606,7 @@ namespace Prolog
       currentFileWriter = null;
       maxWriteDepth = -1; // i.e. no max depth
       predicateCallOptions = new PredicateCallOptions ();
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
       xmlFile = null;
       dbCommandSet = null;
 #endif
@@ -707,7 +707,7 @@ namespace Prolog
         gensymInt = 0;
         io.Reset (); // clear input character buffer
         goalListHead = parser.QueryNode;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         xmlFile = null;
         xmlMaxEl = INF;
         firstGoal = true;
@@ -737,13 +737,13 @@ namespace Prolog
     public void PostQueryTidyUp ()
     {
       openFiles.CloseAllOpenFiles ();
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
       XmlTraceClose ();
 #endif
       currentFileReader = null;
       currentFileWriter = null;
 
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
       if (dbCommandSet != null)
         dbCommandSet.CloseAllConnections ();
 #endif
@@ -758,7 +758,7 @@ namespace Prolog
 
       try
       {
-#if NETSTANDARD
+#if NETSTANDARD2_0
         solution.Solved = ExecuteGoalList ();
 #else
         solution.Solved = (queryTimeout == 0) ? ExecuteGoalList () : StartExecuteGoalListThread ();
@@ -784,7 +784,7 @@ namespace Prolog
       }
     }
 
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     bool StartExecuteGoalListThread ()
     {
       ThreadStart startExecuteGoalList = new ThreadStart (RunExecuteGoalList);
@@ -1123,7 +1123,7 @@ namespace Prolog
         }
         else if (!(redo = CanBacktrack ())) // unify failed - try backtracking
           return false;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         firstGoal = false;
 #endif
       } // end of while
@@ -1414,7 +1414,7 @@ namespace Prolog
             s = Utils.WrapWithMargin (currClause.ToString (), lmar, free);
             IO.Write ("{0}{1,2:d2} {2}: {3}", lmar, level, "Try ", s);
           }
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
           if (xmlTrace)
           {
             if (level > prevLevel)
@@ -1437,7 +1437,7 @@ namespace Prolog
             s = Utils.WrapWithMargin (currClause.ToString (), lmar + "|     ", free);
             IO.Write ("{0,2:d2} {1}: {2}", level, "Try ", s); // fact or clause
           }
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
           if (xmlTrace)
           {
             if (level < prevLevel) xtw.WriteEndElement ();
@@ -1451,7 +1451,7 @@ namespace Prolog
             s = Utils.WrapWithMargin (goal.ToString (), lmar + "|     ", free);
             IO.Write ("{0,2:d2} Fail: {1}", level, s);
           }
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
           if (xmlTrace)
           {
             if (level < prevLevel) xtw.WriteEndElement ();
@@ -1465,7 +1465,7 @@ namespace Prolog
             s = Utils.WrapWithMargin (goal.ToString (), lmar + "         ", free);
             IO.Write ("{0,2:d2} Exit: {1}", level, s);
           }
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
           if (xmlTrace)
           {
             if (level < prevLevel) xtw.WriteEndElement ();
@@ -1570,7 +1570,7 @@ namespace Prolog
             else
             {
               RetryCurrentGoal (level);
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
               if (xmlTrace)
               {
                 XmlTraceWriteElement ("RETRY",
@@ -1590,7 +1590,7 @@ namespace Prolog
             else
             {
               if (!CanBacktrack ()) throw new AbortQueryException ();
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
               if (xmlTrace)
               {
                 XmlTraceWriteElement ("FAILED",
@@ -1607,7 +1607,7 @@ namespace Prolog
             SetSwitch ("Debugging", ref debug, false);
             return false;
           case "a":
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
             if (xmlTrace) XmlTraceWriteElement("ABORT", "Session aborted by user");
 #endif
             throw new AbortQueryException ();
@@ -1700,7 +1700,7 @@ namespace Prolog
       }
     }
 
-#if !NETSTANDARD // Disable XML Trace feature.
+#if !NETSTANDARD2_0 // Disable XML Trace feature.
 
     void XmlTraceOpen (string tag, int maxEl)
     {
@@ -1782,19 +1782,19 @@ namespace Prolog
 
   History commands must not be followed by a '.'
 ";
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     [Serializable] // in order to be able to the retain history between sessions
 #endif
     class CommandHistory : List<string>
     {
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
       ApplicationStorage persistentSettings;
 #endif
       public int cmdNo { get { return Count + 1; } }
       int maxNo; // maximum number of commands to be retained
 
       public CommandHistory()
-#if NETSTANDARD
+#if NETSTANDARD2_0
           : this(enablePersistence: false)
 #else
           : this(enablePersistence: true)
@@ -1805,7 +1805,7 @@ namespace Prolog
       public CommandHistory (bool enablePersistence)
       {
           maxNo = Math.Abs (ConfigSettings.HistorySize);
-#if NETSTANDARD
+#if NETSTANDARD2_0
           if (enablePersistence)
           {
             throw new NotImplementedException();
@@ -1971,7 +1971,7 @@ namespace Prolog
       void ClearHistory ()
       {
         Clear ();
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         if (persistentSettings != null) persistentSettings["CommandHistory"] = null;
 #endif
       }
@@ -1979,7 +1979,7 @@ namespace Prolog
 
       public void Persist ()
       {
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         int maxNum = Math.Min (Count, maxNo);
         if (persistentSettings != null) persistentSettings["CommandHistory"] = GetRange(Count - maxNum, maxNum);
 #endif
@@ -2100,7 +2100,7 @@ namespace Prolog
 
     public void CheckConfigFile ()
     {
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
       string configFileName = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile;
 
       if (!File.Exists (configFileName))

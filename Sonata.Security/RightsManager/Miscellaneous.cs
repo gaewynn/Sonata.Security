@@ -26,7 +26,7 @@ using System.Resources;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 #endif
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
 using System.Configuration;
 using System.IO.IsolatedStorage;
 using System.Runtime.Serialization;
@@ -35,7 +35,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Prolog
 {
-#if NETSTANDARD
+#if NETSTANDARD2_0
   using ArrayList = System.Collections.Generic.List<object>;
   using Hashtable = System.Collections.Generic.Dictionary<object, object>;
 #endif
@@ -67,7 +67,7 @@ namespace Prolog
         get
         {
           string wd;
-#if NETSTANDARD
+#if NETSTANDARD2_0
           if (String.IsNullOrEmpty(workingDirectory))
             wd = Directory.GetCurrentDirectory();
           else if (workingDirectory == "%desktop" || workingDirectory == "%exedir")
@@ -125,7 +125,7 @@ namespace Prolog
 
       public static string GetConfigSetting (string key, string defaultValue)
       {
-#if NETSTANDARD
+#if NETSTANDARD2_0
         return defaultValue;
 #else
         return (ConfigurationManager.AppSettings [key] == null)
@@ -136,7 +136,7 @@ namespace Prolog
 
       static bool GetConfigSetting (string key, bool defaultValue)
       {
-#if NETSTANDARD
+#if NETSTANDARD2_0
         return defaultValue;
 #else
         return (ConfigurationManager.AppSettings [key] == null)
@@ -147,7 +147,7 @@ namespace Prolog
 
       static int GetConfigSetting (string key, int defaultValue)
       {
-#if NETSTANDARD
+#if NETSTANDARD2_0
         return defaultValue;
 #else
         if (ConfigurationManager.AppSettings [key] == null) return defaultValue;
@@ -302,7 +302,7 @@ namespace Prolog
     #endregion Globals
 
     #region PersistentSettings
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     [Serializable]
     public class ApplicationStorage : Hashtable
     {

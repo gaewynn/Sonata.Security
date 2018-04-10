@@ -748,7 +748,7 @@ namespace Prolog
             t = new ListPatternElem (a, ((ListPatternElem)this).downRepFactor, ((ListPatternElem)this).IsNegSearch);
           else if (this is CompoundTerm)
             t = new CompoundTerm (functor, a);
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
           else if (this is DbConnectionTerm)
             t = new DbConnectionTerm ((DbConnectionTerm)this);
 #endif

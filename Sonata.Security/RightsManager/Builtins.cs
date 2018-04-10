@@ -27,7 +27,7 @@ using System.Text.RegularExpressions;
 using System.Security.Principal;
 using System.Resources;
 #endif
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
 using System.Configuration;
 using System.Data;
 using System.Data.Common;
@@ -205,7 +205,7 @@ namespace Prolog
       int cntrValue;
       DateTime dati;
       TimeSpan ti;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
       string cmd = null;
       bool mustWait = false;
       SqlTerm sqlt;
@@ -218,7 +218,7 @@ namespace Prolog
       #region switch
       switch (biId)
       {
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.license:
           Process.Start (Bootstrap.LicenseUrl);
           IO.Message ("Opening your browser ...");
@@ -1144,7 +1144,7 @@ namespace Prolog
 
           if (n > 0) Write (Spaces (n));
           break;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.errorlevel: // errorlevel( +N) % sets DOS ERRORLEVEL (0..255)
           Environment.ExitCode = term.Arg<int> (0);
           break;
@@ -1217,7 +1217,7 @@ namespace Prolog
         #endregion IO
 
         #region SQL
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.sql_connect: // sql_connect( +Provider, +Args, -ConnectionInfo)
           t0 = term.Arg (0); // msaccess, sqlserver, ...
           t1 = term.Arg (1); // Uid, Pwd, Server, Dataset, ..., depending on provider
@@ -1343,7 +1343,7 @@ namespace Prolog
           break;
 #endif
         #endregion SQL
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.config_setting:
           IEnumerator configEnum = null;
           t0 = term.Arg (0);
@@ -1641,7 +1641,7 @@ namespace Prolog
           break;
 
 
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.username: // username( X)
           if (!term.Arg (0).Unify (new AtomTerm (Environment.UserName), varStack))
             return false;
@@ -1828,7 +1828,7 @@ namespace Prolog
           exceptionMessage = (t1 == null) ? t0.FunctorToString : Utils.Format (t0, t1);
           Throw (exceptionClass, exceptionMessage);
           break;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.sendmail:
           string smtp = null;
           string to = null;
@@ -2211,7 +2211,7 @@ namespace Prolog
 
           break;
 
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.xml_term: // xml_term( ?X, ?P [,C]) converts between XML and Prolog representation
           BaseTerm ss = null;
           bool settings = (term.Arity == 3);
@@ -2661,7 +2661,7 @@ namespace Prolog
 
           break;
 
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.xmltrace: // xmltrace( X) -- send the execution tree of the next command to file X
           // Must be the first goal of a command, in order to avoid problems that
           // arise when it gets involved in backtracking.
@@ -2757,7 +2757,7 @@ namespace Prolog
             IO.Error (":- stacktrace: illegal argument '{0}'; use 'on' or 'off' instead", mode);
 
           break;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.ip_address: // return local IP-address
           IPHostEntry host = Dns.GetHostEntry (Dns.GetHostName ());
 
@@ -2785,7 +2785,7 @@ namespace Prolog
           }
           break;
 #endif
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
         case BI.environment: // environment( X, Y) -- unify Y with Atom value of environment variable X
           t0 = term.Arg (0);
           string es;

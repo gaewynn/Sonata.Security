@@ -11,7 +11,7 @@ namespace Prolog
   using System.Diagnostics;
   using System.Globalization;
 
-#if NETSTANDARD
+#if NETSTANDARD2_0
     using ApplicationException = System.Exception;
     using Stack = System.Collections.Generic.Stack<object>;
     using ArrayList = System.Collections.Generic.List<object>;
@@ -2857,7 +2857,7 @@ namespace Prolog
     #endregion FileBuffer
 
     #region XmlWriteBuffer
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     public class XmlWriteBuffer
     {
       protected XmlTextWriter tw;
@@ -2970,7 +2970,7 @@ namespace Prolog
     #endregion XmlWriteBuffer
 
     #region XmlFileWriter
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     public class XmlFileWriter : XmlWriteBuffer
     {
       public XmlFileWriter (string fileName, bool initialPI)
@@ -2990,7 +2990,7 @@ namespace Prolog
     #endregion XmlFileWriter
 
     #region XmlStringWriter
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
     public class XmlStringWriter : XmlWriteBuffer
     {
       public XmlStringWriter (bool initialPI)

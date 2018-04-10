@@ -26,7 +26,7 @@ using System.IO;
 
 namespace Prolog
 {
-#if NETSTANDARD
+#if NETSTANDARD2_0
   using Hashtable = System.Collections.Generic.Dictionary<object, object>;
   using SortedList = System.Collections.Generic.SortedList<object, object>;
   internal static class HashtableExtension
@@ -1027,7 +1027,7 @@ namespace Prolog
           FindUndefined (sd, kv.Value);
 
         IO.WriteLine ("The following predicates are undefined:");
-#if NETSTANDARD
+#if NETSTANDARD2_0
         foreach (var kv in sd) IO.WriteLine ("  {0}", kv.Key);
 #else
         foreach (DictionaryEntry kv in sd) IO.WriteLine ("  {0}", kv.Key);

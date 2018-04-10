@@ -19,7 +19,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
 using System.Data.Common;
 using System.Data;
 #endif
@@ -391,7 +391,7 @@ namespace Prolog
     #endregion IntRangeTerm
 
     #region DbConnectionTerm
-    #if !NETSTANDARD
+    #if !NETSTANDARD2_0
     // to store database connection info before and between calls to sql_select/2 and sql_command/2/3
     public class DbConnectionTerm : StringTerm
     {
@@ -424,7 +424,7 @@ namespace Prolog
 
     // Auxiliary code for supporting the SQL predicates
     #region DbCommandSet
-    #if !NETSTANDARD
+    #if !NETSTANDARD2_0
     public class DbCommandSet : List<DbCommand>
     {
       const int maxConnections = 64; // arbitray choice

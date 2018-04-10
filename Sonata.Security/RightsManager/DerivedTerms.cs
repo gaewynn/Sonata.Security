@@ -21,7 +21,7 @@ using System.Collections;
 using System.Linq;
 using System.Globalization;
 
-#if !NETSTANDARD
+#if !NETSTANDARD2_0
 using System.Data.Common;
 using System.Data;
 #endif
@@ -265,7 +265,7 @@ namespace Prolog
     #endregion ClauseTerm
 
     #region SqlTerm
-    #if !NETSTANDARD
+    #if !NETSTANDARD2_0
     public class SqlTerm : BaseTerm
     {
       DbCommand dbCommand;
