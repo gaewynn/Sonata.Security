@@ -458,7 +458,6 @@ namespace Prolog
        */
        xml_term( X, T)          :== xml_term. % X is string or text file containing xml, T is Prolog term
        xml_term( X, T, Options) :== xml_term. 
-       
 
        % 'xmldocument$'/3 is the last argument of xml_term/2/3
        % '#define fullyTagged' must be commented out in SimpleDOMParser.cs.
@@ -553,92 +552,6 @@ namespace Prolog
        query_timeout( MSecs)    :== query_timeout. % must be entered as a separate query *before* the query you want to limit
 
        make_help_resx           :== make_help_resx. % create help resource file from the file name specified in the config file
-
-%      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% SAMPLES, TESTING & EXPERIMENTAL
-
-       age( peter, 7).
-       age( ann, 5).
-       age( ann, 6).
-       age( pat, 8).
-       age( tom, 5).
-
-collab(afi).
-collab(lma).
-
-       variation( L0, K, L1) :-
-         combination( L0, K, L),
-         permutation( L, L1).
-
-% Ivan Bratko, ""PROLOG Programming for Artificial Intelligence"", example at 3rd edition 2001, ch.21.1 p.560
-
-       sentence( Number) --> (noun_phrase(Number), verb_phrase(Number)).
-       verb_phrase( Number) --> verb(Number), noun_phrase(Number).
-       noun_phrase( Number) --> determiner(Number), noun(Number).
-       determiner( singular) --> [a].
-       determiner( singular) --> [the].
-       determiner( plural) --> [the].
-       noun( singular) --> [cat].
-       noun( singular) --> [mouse].
-       noun( plural) --> [cats].
-       noun( plural) --> [mice].
-       verb( singular) --> [scares].
-       verb( singular) --> [hates].
-       verb( plural) --> [scare].
-       verb( plural) --> [hate].
-       verb( plural) --> [hate];[love].
-
-% TALK (Fernando Pereira, Stuart Shieber), ""Prolog and Natural Language Analysis"", pp. 149+
-
-       % A PDF-version of this book (obtained from Internet after googling
-       % ""Fernando Pereira TALK-program"") can be found in the TALK directory.
-
-       talk :- ['TALK\\talk'].
-
-       % Start the program by entering 'go.', end by entering an empty line.
-       %
-       % Sample dialog (TALK-responses not shown) (notice: no terminating dots):
-       %
-       % >> principia is a book
-       % >> bertrand wrote every book
-       % >> what did bertrand write
-
-
-% CHAT-80 (Fernando Pereira) (http://www.cis.upenn.edu/~pereira/oldies.html)
-
-       % See demo.txt and docu in the CHAT-directory for examples.
-       % Start CHAT by entering 'hi.', end by entering 'bye.'
-       % The CHAT-software is copyrighted !!!  (although I do not think Fernando
-       % Pereira still cares -- unfortunately he never responded to mails)
-
-       chat :- consult([
-        'chat-80\\xgrun',     % XG (eXtended Grammar)
-        'chat-80\\newg',      % clone + lex
-        'chat-80\\clotab',    % attachment tables
-        'chat-80\\slots1',    % fits arguments into predicates
-        'chat-80\\scopes',    % quantification and scoping
-        'chat-80\\qplan',     % query planning
-        'chat-80\\talkr',     % query evaluation
-        'chat-80\\readin',    % sentence input
-        'chat-80\\ptree',     % print trees
-        'chat-80\\aggreg',    % aggregation operators
-        'chat-80\\templa',    % semantic dictionary
-        'chat-80\\slots2',    % fits arguments into predicates
-        'chat-80\\newdict',   % syntactic dictionary
-        'chat-80\\world',     % geographical data base (with data from 25 years ago!)
-        'chat-80\\rivers',    % ...
-        'chat-80\\cities',    % ...
-        'chat-80\\countries', % ...
-        'chat-80\\contain',   % ...
-        'chat-80\\borders',   % ...
-        'chat-80\\ndtabl',    % relation info
-        'chat-80\\newtop']).  % top level
-
-       % also required for CHAT:
-
-       keysort(L, S) :- sort(L, S).
-
-       conc([], L, L).
-       conc([X|L1], L2, [X|L3]) :- conc(L1, L2, L3).
 
        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% END
 

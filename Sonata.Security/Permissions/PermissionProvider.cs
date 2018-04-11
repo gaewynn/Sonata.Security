@@ -99,17 +99,18 @@ namespace Sonata.Security.Permissions
                     SecurityProvider.Trace($"   Running predicate: {goal}");
                 }
 
-                var solutions = PrologEngine.GetAllSolutions(null, goal);
+				// CsProlog is half-assed, and GetAllSolutions does not work.
+				// We reuse the implementation of GetFirstSolution instead.
+	            PrologEngine.Query = goal;
+                var solutions = PrologEngine.SolutionIterator;
 
-                if (solutions.HasError)
-                {
-                    throw new Exception(solutions.ErrMsg);
-                }
+				// Warning, the solution iterator returns one more result after exploring the whole tree of solutions.
+				// Fortunately, this solution has the Solved flag set to true
+                var variables = from solution in solutions
+								where solution.Solved
+								select solution.VarValuesIterator.ToDictionary(v => v.Name.ToString(), v => v.Value.ToString());
 
-                var variables = from solution in solutions.NextSolution
-                    select solution.NextVariable.ToDictionary(v => v.Name, v => v.Value);
-
-                return variables;
+                return variables.Distinct();
             }
             catch (Exception ex)
             {
@@ -244,7 +245,13 @@ namespace Sonata.Security.Permissions
                 AssertIsNotNull(request.User, nameof(request.User));
                 AssertIsNotNull(request.Entity, nameof(request.Entity));
 
-                QuotePermissionRequest(ref request);
+	            var permission = new Permission
+	            {
+		            Target = request.Target,
+		            Entity = request.Entity,
+	            };
+
+				QuotePermissionRequest(ref request);
 
                 var solutions = Solve(DefaultRuleName,
                     request.User,
@@ -257,12 +264,7 @@ namespace Sonata.Security.Permissions
                     (accessType, solution) => accessType | ActionToAccessType(solution["Action"]));
 
                 // Aucune Permission
-                var permission = new Permission
-                {
-                    Target = request.Target,
-                    Entity = request.Entity,
-                    AccessTypes = access
-                };
+	            permission.AccessTypes = access;
 
                 return permission;
             }
