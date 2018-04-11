@@ -167,6 +167,11 @@ namespace Sonata.Security.Tests.Permissions
 
 		}
 
+		// TODO Add a test for wildcard variables in the rules (_).
+		// In this case, the variables are not bound to any value in the solution
+		// So the variables dictionary has no key for this variable
+		// One way to handle this would be to pass the list of variables to Solve or parsing the query to extract variables,
+		// and preload the dictionary with noll values for each variable.
 		public class AuthorizationManagerTestBench : PermissionProviderTestBench
 		{
 			private static readonly string[] Facts = {
