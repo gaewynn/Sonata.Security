@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using Prolog;
 
 namespace Sonata.Security.Permissions
@@ -99,18 +100,33 @@ namespace Sonata.Security.Permissions
                     SecurityProvider.Trace($"   Running predicate: {goal}");
                 }
 
+	            var variableNames = arguments.Where(arg => Regex.IsMatch(arg ?? "", "^[A-Z]")).ToList();
+
 				// CsProlog is half-assed, and GetAllSolutions does not work.
 				// We reuse the implementation of GetFirstSolution instead.
 	            PrologEngine.Query = goal;
-                var solutions = PrologEngine.SolutionIterator;
+                var prologSolutions = PrologEngine.SolutionIterator;
 
 				// Warning, the solution iterator returns one more result after exploring the whole tree of solutions.
 				// Fortunately, this solution has the Solved flag set to true
-                var variables = from solution in solutions
-								where solution.Solved
-								select solution.VarValuesIterator.ToDictionary(v => v.Name.ToString(), v => v.Value.ToString());
+	            var solutions = prologSolutions
+		            .Where(solution => solution.Solved)
+			        .Select(solution => solution.VarValuesIterator
+						.Where(v => ((PrologEngine.BaseTerm)v.Value).IsAtomic) // This is required to exclude wildcards from the solution set.
+			            .ToDictionary(v => v.Name.ToString(), v => v.Value.ToString()))
+			        .Distinct()
+		            .ToList();
 
-                return variables.Distinct();
+	            foreach (var s in solutions)
+	            {
+		            foreach (var name in variableNames)
+		            {
+			            if (!s.ContainsKey(name))
+				            s[name] = null;
+		            }
+	            }
+
+	            return solutions;
             }
             catch (Exception ex)
             {

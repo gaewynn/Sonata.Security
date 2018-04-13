@@ -165,6 +165,25 @@ namespace Sonata.Security.Tests.Permissions
 				Assert.Contains("lma", collabs);
 			}
 
+			[Fact]
+			public void PrologEngineCanSolveUnboundPredicatesWithWildcards()
+			{
+				var facts = new[] {
+					"responsableActivite(afi, \".A1\").",
+					"responsableActivite(afi, _).",
+				};
+				System.IO.File.WriteAllLines(FactsFilePath, facts);
+
+				Provider.Fetch();
+
+				var solutions = Provider.Solve("responsableActivite", "afi", "Activite").ToList();
+
+				Assert.Equal(2, solutions.Count);
+				Assert.True(solutions.All(s => s.ContainsKey("Activite")));
+				var activites = solutions.Select(s => s["Activite"]).ToList();
+				Assert.Equal("\".A1\"", activites[0]);
+				Assert.Null(activites[1]);
+			}
 		}
 
 		// TODO Add a test for wildcard variables in the rules (_).
