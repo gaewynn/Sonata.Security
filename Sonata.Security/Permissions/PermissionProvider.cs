@@ -7,427 +7,418 @@ using Sonata.Security.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using Prolog;
 
 namespace Sonata.Security.Permissions
 {
-	public class PermissionProvider
-	{
-		#region Constants
+    public class PermissionProvider
+    {
+        #region Constants
 
-		public const string DefaultRuleName = "authorisation";
-		public const string ActionLecture = "lecture";
-		public const string ActionAjouter = "ajouter";
-		public const string ActionModifier = "modifier";
-		public const string ActionSupprimer = "supprimer";
+        public const string DefaultRuleName = "authorisation";
+        public const string ActionLecture = "lecture";
+        public const string ActionAjouter = "ajouter";
+        public const string ActionModifier = "modifier";
+        public const string ActionSupprimer = "supprimer";
 
-		#endregion
+        #endregion
 
-		#region Members
+        #region Members
 
-		protected string Entity;
-		protected string PermissionCheck;
-		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
-		private readonly string _factsFileFullName;
-		private readonly string _rulesFileFullName;
+        protected string Entity;
+        protected string PermissionCheck;
+        protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
+        private readonly string _factsFileFullName;
+        private readonly string _rulesFileFullName;
 
-		#endregion
+        #endregion
 
-		#region Properties
+        #region Properties
 
-		public PrologEngine PrologEngine { get; set; }
+        private PrologEngine PrologEngine { get; set; }
 
-		#endregion
+        #endregion
 
-		#region Constructors
+        #region Constructors
 
-		public PermissionProvider(string factsFileFullName, string rulesFileFullName)
-		{
-			_factsFileFullName = factsFileFullName;
-			_rulesFileFullName = rulesFileFullName;
+        public PermissionProvider(string factsFileFullName, string rulesFileFullName)
+        {
+            _factsFileFullName = factsFileFullName;
+            _rulesFileFullName = rulesFileFullName;
 
-			SecurityProvider.Trace($"Facts file: {_factsFileFullName}");
-			SecurityProvider.Trace($"Rules file: {_rulesFileFullName}");
-		}
+            SecurityProvider.Trace($"Facts file: {_factsFileFullName}");
+            SecurityProvider.Trace($"Rules file: {_rulesFileFullName}");
+        }
 
-		#endregion
+        #endregion
 
-		#region Methods
+        #region Methods
 
-		public virtual bool Eval(string ruleName = DefaultRuleName, params string[] arguments)
-		{
-			SecurityProvider.Trace($"Call to {nameof(Eval)}");
+        /// <summary>
+        /// Evaluate a predicate. The predicate can contain Prolog variables.
+        /// </summary>
+        /// <param name="ruleName"></param>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public virtual bool Eval(string ruleName = DefaultRuleName, params string[] arguments)
+        {
+            SecurityProvider.Trace($"Call to {nameof(Eval)}");
+            try
+            {
+                var goal = BuildPredicate(ruleName, arguments);
+                if (SecurityConfiguration.IsDebugModeEnabled)
+                    SecurityProvider.Trace($"   Running predicate: {goal}");
 
-			try
-			{
-				var goal = $"{ruleName}({String.Join(", ", arguments.Select(arg => arg.AsTerm()))}).";
-				if (SecurityConfiguration.IsDebugModeEnabled)
-					SecurityProvider.Trace($"   Running predicate: {goal}");
+                var result = PrologEngine.GetFirstSolution(goal);
+                return result.Solved;
+            }
+            catch (Exception ex)
+            {
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+                throw;
+            }
+        }
 
-				var result = PrologEngine.GetFirstSolution(goal);
-				return result.Solved;
-			}
-			catch (Exception ex)
-			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-			}
+        /// <summary>
+        /// Evaluate a partially bound predicate (with Prolog variables) and returns the solutions as a collection of dictionaries.
+        /// Each dictionary is the set of matching variables, with their bound values.
+        /// If the predicate is fully bound, then the return value is a collection of empty dictionaries.
+        /// </summary>
+        /// <param name="ruleName"></param>
+        /// <param name="arguments"></param>
+        /// <returns></returns>
+        public virtual IEnumerable<Dictionary<string, string>> Solve(string ruleName = DefaultRuleName, params string[] arguments)
+        {
+            SecurityProvider.Trace($"Call to {nameof(Solve)}");
+            try
+            {
+                var goal = BuildPredicate(ruleName, arguments);
+                if (SecurityConfiguration.IsDebugModeEnabled)
+                {
+                    SecurityProvider.Trace($"   Running predicate: {goal}");
+                }
 
-			return false;
-		}
+	            var variableNames = arguments.Where(arg => Regex.IsMatch(arg ?? "", "^[A-Z]")).ToList();
 
-		public virtual void AddFact(string fact)
-		{
-			SecurityProvider.Trace($"Call to {nameof(AddFact)}");
+				// CsProlog is half-assed, and GetAllSolutions does not work.
+				// We reuse the implementation of GetFirstSolution instead.
+	            PrologEngine.Query = goal;
+                var prologSolutions = PrologEngine.SolutionIterator;
 
-			if (SecurityConfiguration.IsDebugModeEnabled)
-			{
-				SecurityProvider.Trace($"   Adding fact: {fact}");
-			}
+				// Warning, the solution iterator returns one more result after exploring the whole tree of solutions.
+				// Fortunately, this solution has the Solved flag set to true
+	            var solutions = prologSolutions
+		            .Where(solution => solution.Solved)
+			        .Select(solution => solution.VarValuesIterator
+						.Where(v => ((PrologEngine.BaseTerm)v.Value).IsAtomic) // This is required to exclude wildcards from the solution set.
+			            .ToDictionary(v => v.Name.ToString(), v => v.Value.ToString()))
+			        .Distinct()
+		            .ToList();
 
-			var facts = System.IO.File.ReadAllLines(_factsFileFullName);
+	            foreach (var s in solutions)
+	            {
+		            foreach (var name in variableNames)
+		            {
+			            if (!s.ContainsKey(name))
+				            s[name] = null;
+		            }
+	            }
 
-			if (facts.Contains(fact))
-			{
-				SecurityProvider.Trace("   Fact already exists: nothing to do.");
-				return;
-			}
+	            return solutions;
+            }
+            catch (Exception ex)
+            {
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+                throw;
+            }
+        }
 
-			SecurityProvider.Trace("   Appending fact...");
-			System.IO.File.WriteAllLines(_factsFileFullName, facts.Append(fact));
-			LoadEngine();
-		}
+        public virtual void AddFact(string fact)
+        {
+            SecurityProvider.Trace($"Call to {nameof(AddFact)}");
 
-		public virtual void RemoveFact(string fact)
-		{
-			SecurityProvider.Trace($"Call to {nameof(RemoveFact)}");
+            if (SecurityConfiguration.IsDebugModeEnabled)
+            {
+                SecurityProvider.Trace($"   Adding fact: {fact}");
+            }
 
-			if (SecurityConfiguration.IsDebugModeEnabled)
-			{
-				SecurityProvider.Trace($"   Removing fact: {fact}");
-			}
+            var facts = System.IO.File.ReadAllLines(_factsFileFullName);
 
-			var facts = System.IO.File.ReadAllLines(_factsFileFullName);
+            if (facts.Contains(fact))
+            {
+                SecurityProvider.Trace("   Fact already exists: nothing to do.");
+                return;
+            }
 
-			if (!facts.Contains(fact))
-			{
-				SecurityProvider.Trace("   Fact already removed: nothing to do.");
-				return;
-			}
+            SecurityProvider.Trace("   Appending fact...");
+            System.IO.File.WriteAllLines(_factsFileFullName, facts.Append(fact));
+            LoadEngine();
+        }
 
-			SecurityProvider.Trace("   Removing fact...");
-			System.IO.File.WriteAllLines(_factsFileFullName, facts.Where(f => f != fact));
-			LoadEngine();
-		}
+        public virtual void RemoveFact(string fact)
+        {
+            SecurityProvider.Trace($"Call to {nameof(RemoveFact)}");
 
-		public virtual bool IsAuthorized(PermissionRequest request)
-		{
-			SecurityProvider.Trace($"Call to {nameof(IsAuthorized)}");
+            if (SecurityConfiguration.IsDebugModeEnabled)
+            {
+                SecurityProvider.Trace($"   Removing fact: {fact}");
+            }
 
-			try
-			{
-				var goal = BuildGenericPermissionQuestion(request);
-				if (goal == null)
-				{
-					SecurityProvider.Trace("   Built goal is null: no predicate to run");
-					return false;
-				}
+            var facts = System.IO.File.ReadAllLines(_factsFileFullName);
 
-				SecurityProvider.Trace("   Running predicate...");
+            if (!facts.Contains(fact))
+            {
+                SecurityProvider.Trace("   Fact already removed: nothing to do.");
+                return;
+            }
 
-				var reponse = PrologEngine.GetFirstSolution(goal);
-				return reponse.Solved;
-			}
-			catch (Exception ex)
-			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-			}
+            SecurityProvider.Trace("   Removing fact...");
+            System.IO.File.WriteAllLines(_factsFileFullName, facts.Where(f => f != fact));
+            LoadEngine();
+        }
 
-			return false;
-		}
+        public virtual bool IsAuthorized(PermissionRequest request)
+        {
+            SecurityProvider.Trace($"Call to {nameof(IsAuthorized)}");
 
-		/// <summary>
-		/// Renvoie la liste du trigramme des utilisateurs autorisé pour un utilisateur, une action et une entitée donnés.
-		/// </summary>
-		/// <param name="request">La requête à fournir au moteur prolog : User, Action, Entity doivent être non nulls</param>
-		/// <param name="request.User>">Non Null</param>
-		/// <param name="request.Target>">Ignoré</param>
-		/// <param name="request.Action>">Non Null</param>
-		/// <param name="request.Entity>">Non Null</param>
-		/// <returns>Un tableau des utilisateurs authorisés</returns>
-		public virtual List<string> GetAuthorizedTargets(PermissionRequest request)
-		{
-			SecurityProvider.Trace($"Call to {nameof(GetAuthorizedTargets)}");
+            try
+            {
+                return Eval(DefaultRuleName,
+                    request.User,
+                    request.Target,
+                    request.Entity,
+                    request.Action);
+            }
+            catch (Exception ex)
+            {
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+            }
 
-			if (request == null)
-				throw new ArgumentNullException(nameof(request));
+            return false;
+        }
 
-			try
-			{
-				//	Vérifie que User, Action, Entity non null
-				var neededKeys = new[] { "User", "Action", "Entity" };
-				foreach (var key in neededKeys)
-				{
-					if (String.IsNullOrWhiteSpace(request.GetPropertyValue(request.GetType(), key) as String))
-						throw new ArgumentException(key + " can not be empty or whitespace.", key);
-				}
+        /// <summary>
+        /// Renvoie la liste du trigramme des utilisateurs autorisé pour un utilisateur, une action et une entitée donnés.
+        /// </summary>
+        /// <param name="request">La requête à fournir au moteur prolog : User, Action, Entity doivent être non nulls</param>
+        /// <param name="request.User>">Non Null</param>
+        /// <param name="request.Target>">Ignoré</param>
+        /// <param name="request.Action>">Non Null</param>
+        /// <param name="request.Entity>">Non Null</param>
+        /// <returns>Un tableau des utilisateurs authorisés</returns>
+        public virtual List<string> GetAuthorizedTargets(PermissionRequest request)
+        {
+            SecurityProvider.Trace($"Call to {nameof(GetAuthorizedTargets)}");
 
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            try
+            {
+                AssertIsNotNull(request.User, nameof(request.User));
+                AssertIsNotNull(request.Action, nameof(request.Action));
+                AssertIsNotNull(request.Entity, nameof(request.Entity));
+
+                QuotePermissionRequest(ref request);
+
+                var solutions = Solve(DefaultRuleName,
+                    request.User,
+                    "Target",
+                    request.Entity,
+                    request.Action);
+
+                var collabs = solutions.Select(s => s["Target"].Trim('\''));
+
+                return collabs.ToList();
+            }
+            catch (Exception ex)
+            {
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Renvoie un objet Permission contenant les actions autorisées pour un utilisateur, sur une target et une entitée donnée.
+        /// </summary>
+        /// <param name="request">La requête à fournir au moteur prolog : User, Target, Entity doivent être non nulls</param>
+        /// <param name="request.User>">Non Null</param>
+        /// <param name="request.Target>">Non Null</param>
+        /// <param name="request.Action>">Ignoré</param>
+        /// <param name="request.Entity>">Non Null</param>
+        /// <returns>Une Permission contenant les actions autorisées</returns>
+        public virtual Permission GetTargetPermissions(PermissionRequest request)
+        {
+            SecurityProvider.Trace($"Call to {nameof(GetTargetPermissions)}");
+
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            try
+            {
+                AssertIsNotNull(request.User, nameof(request.User));
+                AssertIsNotNull(request.Entity, nameof(request.Entity));
+
+	            var permission = new Permission
+	            {
+		            Target = request.Target,
+		            Entity = request.Entity,
+	            };
 
 				QuotePermissionRequest(ref request);
-				request.Target = "Collab";
-				var goal = BuildGenericPermissionQuestion(request);
 
-				SecurityProvider.Trace(goal == null
-					? "   Built goal is null: no predicate to run"
-					: "   Running predicate...");
+                var solutions = Solve(DefaultRuleName,
+                    request.User,
+                    request.Target,
+                    request.Entity,
+                    "Action");
 
-				var solveResults = PrologEngine.GetAllSolutions(null, goal);
-				var returnedCollabs = new List<string>();
-				
-				if (!solveResults.Success)
-					return returnedCollabs;
+                var access = solutions
+                    .Aggregate(AccessTypes.None,
+                    (accessType, solution) => accessType | ActionToAccessType(solution["Action"]));
 
-				returnedCollabs.AddRange(solveResults.NextSolution.Select(solution => solution.NextVariable.Single(e => e.Name == "Collab").Value));
+                // Aucune Permission
+	            permission.AccessTypes = access;
 
-				return returnedCollabs;
-			}
-			catch (Exception ex)
-			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-			}
+                return permission;
+            }
+            catch (Exception ex)
+            {
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+            }
 
-			return null;
-		}
+            return null;
+        }
 
-		/// <summary>
-		/// Renvoie un objet Permission contenant les actions autorisées pour un utilisateur, sur une target et une entitée donnée.
-		/// </summary>
-		/// <param name="request">La requête à fournir au moteur prolog : User, Target, Entity doivent être non nulls</param>
-		/// <param name="request.User>">Non Null</param>
-		/// <param name="request.Target>">Non Null</param>
-		/// <param name="request.Action>">Ignoré</param>
-		/// <param name="request.Entity>">Non Null</param>
-		/// <returns>Une Permission contenant les actions autorisées</returns>
-		public virtual Permission GetTargetPermissions(PermissionRequest request)
-		{
-			SecurityProvider.Trace($"Call to {nameof(GetTargetPermissions)}");
+        public virtual List<string> GetEntityTargetPermissions(PermissionRequest request)
+        {
+            var solutions = Solve(DefaultRuleName,
+                request.User,
+                null,
+                request.Target,
+                request.Entity,
+                "Action");
 
-			if (request == null)
-				throw new ArgumentNullException(nameof(request));
+            var authorizedActions = solutions
+                .Select(s => s["Action"])
+                .Distinct()
+                .Where(action => Actions.Contains(action));
 
-			try
-			{
-				//Vérifie que User, Target et Entity sont non nulls
-				var neededKeys = new[] { "User", "Entity" };
-				foreach (var key in neededKeys)
-				{
-					if (String.IsNullOrWhiteSpace(request.GetPropertyValue(request.GetType(), key) as String))
-						throw new ArgumentException(key + " can not be empty or whitespace.", key);
-				}
+            return authorizedActions.ToList();
+        }
 
-				QuotePermissionRequest(ref request);
-				request.Action = "A";
-				var goal = BuildGenericPermissionQuestion(request);
+        /// <summary>
+        /// Methode qui permet de récupérer toute les authorisations pour un utilisateur donné
+        /// Authorisation(rma, G, E, A) permet par exemple de récupérer tous les couples (G, E, A) de solutions pour laquelle Authorisation(rma, G, E, A) est vraie
+        /// </summary>
+        /// <param name="request"> Action, Entite et Target sont ignoré, User doit être non null</param>
+        /// <returns>  </returns>
+        public virtual List<Permission> GetUserPermissions(PermissionRequest request)
+        {
+            SecurityProvider.Trace($"Call to {nameof(GetUserPermissions)}");
 
-				SecurityProvider.Trace(goal == null
-					? "   Built goal is null: no predicate to run"
-					: "   Running predicate...");
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
 
-				var solveResults = PrologEngine.GetAllSolutions(null, goal);
+            try
+            {
+                AssertIsNotNull(request.User, nameof(request.User));
 
-				// Aucune Permission
-				var returnedPermission = new Permission
-				{
-					Target = request.Target,
-					Entity = request.Entity
-				};
+                var solutions = Solve(DefaultRuleName,
+                    request.User,
+                    "Target",
+                    "Entity",
+                    "Action");
 
-				if (!solveResults.Success)
-					return returnedPermission;
+                var permissions = solutions
+	                .GroupBy(solution => new {Target = solution["Target"], Entity = solution["Entity"]})
+	                .Select(accessGroup => new Permission
+	                {
+		                Target = accessGroup.Key.Target,
+		                Entity = accessGroup.Key.Entity,
+		                AccessTypes = accessGroup.Select(solution => solution["Action"])
+			                .Aggregate(AccessTypes.None, (accessType, action) => accessType | ActionToAccessType(action))
+	                });
 
-				foreach (var solution in solveResults.NextSolution)
-				{
-					var action = solution.NextVariable.Single(e => e.Name == request.Action).Value;
-					switch (action)
-					{
-						case ActionLecture:
-							returnedPermission.AccessTypes |= AccessTypes.Read;
-							break;
-						case ActionAjouter:
-							returnedPermission.AccessTypes |= AccessTypes.Create;
-							break;
-						case ActionModifier:
-							returnedPermission.AccessTypes |= AccessTypes.Update;
-							break;
-						case ActionSupprimer:
-							returnedPermission.AccessTypes |= AccessTypes.Delete;
-							break;
-					}
-				}
+                return permissions.ToList();
+            }
+            catch (Exception ex)
+            {
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+            }
 
-				return returnedPermission;
-			}
-			catch (Exception ex)
-			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-			}
+            return null;
+        }
 
-			return null;
-		}
+        public virtual void Fetch()
+        {
+            SecurityProvider.Trace($"Call to {nameof(Fetch)}");
+            LoadEngine();
+        }
 
-		public virtual List<string> GetEntityTargetPermissions(PermissionRequest request)
-		{
-			var rights = new List<string>();
-			for (var index = 0; index < Actions.Count; index++)
-			{
-				var goal = $"{DefaultRuleName}(" +
-						   $"{request.User.Quote()}, " +
-						   "\"_\", " +
-						   $"{request.Target.Quote()}, " +
-						   $"{request.Entity.Quote()}, " +
-						   $"{Actions.ElementAt(index).Quote()}).";
-				
-				var reponse = PrologEngine.GetFirstSolution(goal);
-				if (reponse.Solved)
-					rights.Add(Actions.ElementAt(index));
-			}
+	    public static string BuildPredicate(string functor, params string[] arguments)
+        {
+            var terms = arguments.Select(arg => arg.AsTerm());
+            var termList = string.Join(", ", terms);
+            return functor + "(" + termList + ").";
+        }
 
-			return rights;
-		}
+        private void LoadEngine()
+        {
+            SecurityProvider.Trace($"Call to {nameof(LoadEngine)}");
 
-		/// <summary>
-		/// Methode qui permet de récupérer toute les authorisations pour un utilisateur donné
-		/// Authorisation(rma, G, E, A) permet par exemple de récupérer tous les couples (G, E, A) de solutions pour laquelle Authorisation(rma, G, E, A) est vraie
-		/// </summary>
-		/// <param name="request"> Action, Entite et Target sont ignoré, User doit être non null</param>
-		/// <returns>  </returns>
-		public virtual List<Permission> GetUserPermissions(PermissionRequest request)
-		{
-			SecurityProvider.Trace($"Call to {nameof(GetUserPermissions)}");
+            try
+            {
+                // Construction des chemins relatifs
+                SecurityProvider.Trace(_rulesFileFullName + " --- " + _factsFileFullName);
 
-			if (request == null)
-				throw new ArgumentNullException(nameof(request));
-
-			try
-			{
-				//Vérifie que User, Target et Entity sont non nulls
-				var neededKeys = new[] { "User" };
-				foreach (var key in neededKeys)
-				{
-					if (String.IsNullOrWhiteSpace(request.GetPropertyValue(request.GetType(), key) as String))
-						throw new ArgumentException(key + " can not be empty or whitespace.", key);
-				}
-
-				request.Action = "A";
-				request.Entity = "E";
-				request.Target = "T";
-
-				var goal = BuildGenericPermissionQuestion(request);
-
-				SecurityProvider.Trace(goal == null
-					? "   Built goal is null: no predicate to run"
-					: "   Running predicate...");
-
-				var solveResults = PrologEngine.GetAllSolutions(null, goal);
-
-				// Aucune Permission
-				var returnedPermission = new List<Permission>();
-				if (!solveResults.Success)
-					return returnedPermission;
-
-				returnedPermission.AddRange(solveResults.NextSolution.Select(solution => new Permission
-				{
-					Target = solution.NextVariable.Single(e => e.Name == request.Target).Value,
-					Entity = solution.NextVariable.Single(e => e.Name == request.Entity).Value,
-					AccessTypes = solution.NextVariable.SingleOrDefault(e => e.Name == request.Action)?.Value.GetEnumStringValue<AccessTypes>() ?? AccessTypes.None
-				}));
-
-				//Aggregation des accesstypes
-				return returnedPermission
-					.GroupBy(a => a.Target + a.Entity)
-					.Select(
-						list =>
-						{
-							var entityTarget = list.FirstOrDefault();
-							var aggregateAccessType = list.Select(q => q.AccessTypes).Aggregate(AccessTypes.None, (sum, nxtElt) =>
-							{
-								sum |= nxtElt;
-								return sum;
-							});
-							return new Permission()
-							{
-								Entity = entityTarget.Entity,
-								Target = entityTarget.Target,
-								AccessTypes = aggregateAccessType
-							};
-						})
-					.ToList();
-			}
-			catch (Exception ex)
-			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-			}
-
-			return null;
-		}
-
-		public virtual void Fetch()
-		{
-			SecurityProvider.Trace($"Call to {nameof(Fetch)}");
-			LoadEngine();
-		}
-
-		public virtual string BuildGenericPermissionQuestion(PermissionRequest request)
-		{
-			SecurityProvider.Trace($"Call to {nameof(BuildGenericPermissionQuestion)}");
-
-			try
-			{
-				var predicate = $"{DefaultRuleName}(" +
-								$"{request.User.AsTerm()}" +
-								$"{request.Target.AsTerm()}" +
-								$"{request.Entity.AsTerm()}" +
-								$"{request.Action.AsTerm()}";
-
-				if (SecurityConfiguration.IsDebugModeEnabled)
-					SecurityProvider.Trace($"   Building predicate: {predicate}");
-
-				return predicate;
-			}
-			catch (Exception ex)
-			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-			}
-
-			return null;
-		}
-
-		protected void QuotePermissionRequest(ref PermissionRequest p)
-		{
-			p.Target = p.Target.Quote();
-			p.Entity = p.Entity.Quote();
-			p.Action = p.Action.Quote();
-			p.User = p.User.Quote();
-		}
-
-		private void LoadEngine()
-		{
-			SecurityProvider.Trace($"Call to {nameof(LoadEngine)}");
-
-			try
-			{
-				// Construction des chemins relatifs
-				SecurityProvider.Trace(_rulesFileFullName + " --- " + _factsFileFullName);
-
-				PrologEngine = new PrologEngine(false);
-				PrologEngine.Consult(_factsFileFullName);
-				PrologEngine.Consult(_rulesFileFullName);
-			}
-			catch (Exception ex)
-			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-			}
-		}
+                PrologEngine = new PrologEngine(false);
+                PrologEngine.Consult(_factsFileFullName);
+                PrologEngine.Consult(_rulesFileFullName);
+            }
+            catch (Exception ex)
+            {
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+            }
+        }
 
 		#endregion
+
+		#region Helpers
+
+	    protected static void QuotePermissionRequest(ref PermissionRequest p)
+	    {
+		    p.Target = p.Target.Quote();
+		    p.Entity = p.Entity.Quote();
+		    p.Action = p.Action.Quote();
+		    p.User = p.User.Quote();
+	    }
+
+	    private static void AssertIsNotNull(string value, string propertyName)
+	    {
+		    if (value == null)
+		    {
+			    throw new ArgumentException(propertyName + " can not be empty or whitespace.",
+				    propertyName);
+		    }
+	    }
+
+		private static AccessTypes ActionToAccessType(string action)
+		{
+			switch (action)
+			{
+				case ActionLecture: return AccessTypes.Read;
+				case ActionAjouter: return AccessTypes.Create;
+				case ActionModifier: return AccessTypes.Update;
+				case ActionSupprimer: return AccessTypes.Delete;
+				default: return AccessTypes.None;
+			}
+		}
+
+	    #endregion Helpers
+
+
 	}
 }

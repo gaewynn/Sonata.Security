@@ -1,5 +1,4 @@
-﻿using Sonata.Security.Extensions;
-using Sonata.Security.Permissions;
+﻿using Sonata.Security.Permissions;
 using System;
 using System.Linq;
 using Xunit;
@@ -11,13 +10,10 @@ namespace Sonata.Security.Tests.Permissions
 		[Fact]
 		public void PrologStructCanBeSerializedAsString()
 		{
-			var arguments = new[] { "argument1", "argument2", null }
-				.Select(arg => arg.AsTerm())
-				.ToArray();
+			var goal = PermissionProvider.BuildPredicate("authorisation", "argument1", "argument2", null);
+			const string expected = "authorisation(argument1, argument2, _).";
 
-			var goal = $"authorisation({String.Join(", ", arguments)}).";
-
-			Assert.Equal("authorisation(argument1, argument2, _).", goal);
+			Assert.Equal(expected, goal);
 		}
 
 		public class PermissionProviderTestBench : IDisposable
@@ -114,48 +110,159 @@ namespace Sonata.Security.Tests.Permissions
 
 		public class RuntimeTests : PermissionProviderTestBench
 		{
-			[Fact]
-			public void PrologEngineIsCreatedAfterLoad()
+		    [Fact]
+		    public void PrologEngineCanEvalPredicates()
+		    {
+		        Provider.Fetch();
+		        var facts = new[] { "homme(socrate).", "droid(r2d2)." };
+		        var rules = new[] { "mortel(Personne):-homme(Personne)." };
+
+		        System.IO.File.WriteAllLines(FactsFilePath, facts);
+		        System.IO.File.WriteAllLines(RulesFilePath, rules);
+
+		        Provider.Fetch();
+
+		        Assert.True(Provider.Eval("mortel", "socrate"));
+		        Assert.False(Provider.Eval("mortel", "r2d2"));
+		        Assert.True(Provider.Eval("mortel", "Inconnu"));
+		    }
+			
+            [Fact]
+			public void PrologEngineCanSolveUnaryPredicates()
 			{
-				Provider.Fetch();
-
-				Assert.NotNull(Provider.PrologEngine);
-			}
-
-			[Fact]
-			public void PrologFactsAreLoadedInitially()
-			{
-				var initialContent = new[] { "answerToLifeTheUniverseAndEverything(42).", "collab(afi).", "collab(lma)." };
-				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
+				var facts = new[] { "collab('afi').", "collab(lma)." };
+				System.IO.File.WriteAllLines(FactsFilePath, facts);
 
 				Provider.Fetch();
-
-				Assert.True(Provider.Eval("answerToLifeTheUniverseAndEverything", "42"));
 				
-				var solveResults = Provider.PrologEngine.GetAllSolutions(null, "collab(Collab)");
-				Assert.True(solveResults.Success);
-				Assert.Equal(2, solveResults.Count);
-				Assert.Equal("afi", solveResults.NextSolution.ElementAt(0).NextVariable.Single(e => e.Name == "Collab").Value);
-				Assert.Equal("lma", solveResults.NextSolution.ElementAt(1).NextVariable.Single(e => e.Name == "Collab").Value);
+				var solutions = Provider.Solve("collab", "Collab").ToList();
+
+				Assert.Equal(2, solutions.Count);
+                Assert.True(solutions.All(s => s.ContainsKey("Collab")));
+			    var collabs = solutions.Select(s => s["Collab"]).ToList();
+                Assert.Contains("afi", collabs);
+                Assert.Contains("lma", collabs);
 			}
-		}
 
-		public class AuthorisationTests : PermissionProviderTestBench
-		{
 			[Fact]
-			public void IsAuthorisedReturnsTrueIfRuleExistsInProlog()
+			public void PrologEngineCanSolveBinaryPredicates()
 			{
-				var ruleset = new[] { $"{PermissionProvider.DefaultRuleName}(User,_,_,_):-isUser(User)." };
-				System.IO.File.WriteAllLines(RulesFilePath, ruleset);
-
-				var facts = new[] { "isUser(alice).", "isUser(bob)." };
+				var facts = new[] {
+					"collab(afi, ge).",
+					"collab(lma, ge).",
+					"collab(obl, ls)."
+				};
 				System.IO.File.WriteAllLines(FactsFilePath, facts);
 
 				Provider.Fetch();
 
+				var solutions = Provider.Solve("collab", "Collab", "'ge'").ToList();
+
+				Assert.Equal(2, solutions.Count);
+				Assert.True(solutions.All(s => s.ContainsKey("Collab")));
+				var collabs = solutions.Select(s => s["Collab"]).ToList();
+				Assert.Contains("afi", collabs);
+				Assert.Contains("lma", collabs);
+			}
+
+			[Fact]
+			public void PrologEngineCanSolveUnboundPredicatesWithWildcards()
+			{
+				var facts = new[] {
+					"responsableActivite(afi, \".A1\").",
+					"responsableActivite(afi, _).",
+				};
+				System.IO.File.WriteAllLines(FactsFilePath, facts);
+
+				Provider.Fetch();
+
+				var solutions = Provider.Solve("responsableActivite", "afi", "Activite").ToList();
+
+				Assert.Equal(2, solutions.Count);
+				Assert.True(solutions.All(s => s.ContainsKey("Activite")));
+				var activites = solutions.Select(s => s["Activite"]).ToList();
+				Assert.Equal("\".A1\"", activites[0]);
+				Assert.Null(activites[1]);
+			}
+		}
+
+		// TODO Add a test for wildcard variables in the rules (_).
+		// In this case, the variables are not bound to any value in the solution
+		// So the variables dictionary has no key for this variable
+		// One way to handle this would be to pass the list of variables to Solve or parsing the query to extract variables,
+		// and preload the dictionary with noll values for each variable.
+		public class AuthorizationManagerTestBench : PermissionProviderTestBench
+		{
+			private static readonly string[] Facts = {
+				"powerUser(alice).",
+				"powerUser(bob).",
+				"administrator(bob).",
+				"chuckNorris(chuck).",
+			};
+
+			private static readonly string[] Rules =
+			{
+				"authorisation(User, Target, stuff, Action):-userCanDoActionOnTarget(User, Action, Target).",
+				"is_user(User):-is_powerUser(User).",
+				"is_powerUser(User):-powerUser(User).",
+				"is_powerUser(User):-is_administrator(User).",
+				"is_administrator(User):-administrator(User).",
+				"is_administrator(User):-is_chuckNorris(User).",
+				"is_chuckNorris(User):-chuckNorris(User).",
+				"userCanDoActionOnTarget(User, lecture, publicStuff):-is_user(User).",
+				"userCanDoActionOnTarget(User, modifier, publicStuff):-is_powerUser(User).",
+				"userCanDoActionOnTarget(User, lecture, restrictedStuff):-is_powerUser(User).",
+				"userCanDoActionOnTarget(User, modifier, restrictedStuff):-is_administrator(User).",
+				"userCanDoActionOnTarget(User, lecture, adminStuff):-is_administrator(User).",
+				"userCanDoActionOnTarget(User, _, _):-is_chuckNorris(User).",
+			};
+
+			public AuthorizationManagerTestBench()
+			{
+				System.IO.File.WriteAllLines(FactsFilePath, Facts);
+				System.IO.File.WriteAllLines(RulesFilePath, Rules);
+				Provider.Fetch();
+			}
+		}
+
+		public class IsAuthorizedTests : AuthorizationManagerTestBench
+		{
+			[Fact]
+			public void IsAuthorisedReturnsTrueIfRuleExistsInProlog()
+			{
 				var request = new PermissionRequest { User = "bob" };
 
 				Assert.True(Provider.IsAuthorized(request));
+			}
+		}
+
+		public class GetAuthorizedTargetsTests : AuthorizationManagerTestBench
+		{
+			[Fact]
+			public void GetAuthorizedTargetReturnsAllTargetsMatchingTheRequest()
+			{
+				var request = new PermissionRequest { User = "alice", Action = "lecture", Entity = "stuff"};
+
+				var targets = Provider.GetAuthorizedTargets(request);
+
+				Assert.Equal(2, targets.Count);
+				Assert.Contains("publicStuff", targets);
+				Assert.Contains("restrictedStuff", targets);
+			}
+		}
+
+		public class GetTargetPermissionsTests : AuthorizationManagerTestBench
+		{
+			[Fact]
+			public void GetTargetPermissionsReturnsThePermissionsForTheUserAndEntity()
+			{
+				var request = new PermissionRequest { User = "alice", Entity = "stuff" };
+
+				var permission = Provider.GetTargetPermissions(request);
+
+				Assert.Equal("stuff", permission.Entity);
+				Assert.Null(permission.Target);
+				Assert.Equal(AccessTypes.Read | AccessTypes.Update, permission.AccessTypes);
 			}
 		}
 	}
