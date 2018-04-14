@@ -6,10 +6,15 @@ namespace Sonata.Security.Tests.Permissions
 {
 	public class PermissionExtensionTests
 	{
+		public PermissionExtensionTests()
+		{
+			SecurityProvider.Configure(true);
+		}
+
 		[Fact]
 		public void AsTermReturnsUnderscoreIfArgIsNull()
 		{
-			var expected = "_";
+			const string expected = "_";
 			var actual = ((string) null).AsTerm();
 
 			Assert.Equal(expected, actual);
@@ -18,7 +23,7 @@ namespace Sonata.Security.Tests.Permissions
 		[Fact]
 		public void AsTermReturnsUnderscoreIfArgIsEmpty()
 		{
-			var expected = "_";
+			const string expected = "_";
 			var actual = "".AsTerm();
 
 			Assert.Equal(expected, actual);
@@ -27,7 +32,7 @@ namespace Sonata.Security.Tests.Permissions
 		[Fact]
 		public void AsTermReturnsTermIfArgIsNotEmpty()
 		{
-			var expected = "xyz";
+			const string expected = "xyz";
 			var actual = "xyz".AsTerm();
 
 			Assert.Equal(expected, actual);

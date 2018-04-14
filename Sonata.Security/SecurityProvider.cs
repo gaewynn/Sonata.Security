@@ -5,6 +5,7 @@
 using Sonata.Security.Principal;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Sonata.Security
 {
@@ -50,6 +51,15 @@ namespace Sonata.Security
 		#region Methods
 
 		/// <summary>
+		/// Configures the behavior of the Sonata.Security library.
+		/// </summary>
+		/// <param name="enableTraces">true to enable debug traces; otherwise false.</param>
+		public static void Configure(bool enableTraces = false)
+		{
+			SecurityConfiguration.IsDebugModeEnabled = enableTraces;
+		}
+
+		/// <summary>
 		/// Registers an <see cref="IUserProvider"/> and sets it as the current one used by the Sonata.Security Library.
 		/// </summary>
 		/// <param name="userProvider">An <see cref="IUserProvider"/> allowing to retrieve information about the current user. If null, a default <see cref="WindowsUserProvider"/> will be used as the <see cref="IUserProvider"/>.</param>
@@ -69,7 +79,8 @@ namespace Sonata.Security
 				|| String.IsNullOrWhiteSpace(message))
 				return;
 
-			Console.WriteLine($"{DateTime.Now:HH:mm:ss} - {message}");
+			Console.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - {message}");
+			Debug.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - {message}");
 		}
 		
 		#endregion

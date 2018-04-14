@@ -42,6 +42,7 @@ namespace Prolog
   #region Engine
   public partial class PrologEngine
   {
+	 public  Guid InstanceId = Guid.NewGuid();
     static string IOException = "ioException";
     //static string XmlException = "xmlException";
 

@@ -42,6 +42,8 @@ namespace Prolog
 
     public class PredicateTable
     {
+	    public Guid InstanceId = Guid.NewGuid();
+
       PrologEngine engine;
       Dictionary<string, PredicateDescr> predTable;
       Hashtable predefineds;

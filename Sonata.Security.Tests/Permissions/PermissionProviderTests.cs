@@ -7,6 +7,11 @@ namespace Sonata.Security.Tests.Permissions
 {
 	public class PermissionProviderTests
 	{
+		public PermissionProviderTests()
+		{
+			SecurityProvider.Configure(true);
+		}
+
 		[Fact]
 		public void PrologStructCanBeSerializedAsString()
 		{
@@ -58,8 +63,6 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void AddFactAddsANewFactToTheFile()
 			{
-				Provider.Fetch();
-
 				const string fact = "admin(xyz).";
 				Provider.AddFact(fact);
 
@@ -71,8 +74,6 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void DuplicateAFactDoesNotChangeTheFile()
 			{
-				Provider.Fetch();
-
 				const string fact = "admin(xyz).";
 				Provider.AddFact(fact);
 				Provider.AddFact(fact);
@@ -93,10 +94,8 @@ namespace Sonata.Security.Tests.Permissions
 			{
 				var initialContent = new[] { "admin(abc).", "admin(def).", "admin(xyz)." };
 				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
-
-				Provider.Fetch();
-
-				var factToRemove = "admin(def).";
+				
+				const string factToRemove = "admin(def).";
 
 				Provider.RemoveFact(factToRemove);
 
@@ -110,38 +109,29 @@ namespace Sonata.Security.Tests.Permissions
 
 		public class RuntimeTests : PermissionProviderTestBench
 		{
-		    [Fact]
-		    public void PrologEngineCanEvalPredicates()
-		    {
-		        Provider.Fetch();
-		        var facts = new[] { "homme(socrate).", "droid(r2d2)." };
-		        var rules = new[] { "mortel(Personne):-homme(Personne)." };
+			[Fact]
+			public void PrologEngineCanEvalPredicates()
+			{
+				Provider.AddFacts(new[] { "homme(socrate).", "droid(r2d2)." });
+				Provider.AddRules(new[] { "mortel(Personne):-homme(Personne)." });
+				
+				Assert.True(Provider.Eval("mortel", "socrate"));
+				Assert.False(Provider.Eval("mortel", "r2d2"));
+				Assert.True(Provider.Eval("mortel", "Inconnu"));
+			}
 
-		        System.IO.File.WriteAllLines(FactsFilePath, facts);
-		        System.IO.File.WriteAllLines(RulesFilePath, rules);
-
-		        Provider.Fetch();
-
-		        Assert.True(Provider.Eval("mortel", "socrate"));
-		        Assert.False(Provider.Eval("mortel", "r2d2"));
-		        Assert.True(Provider.Eval("mortel", "Inconnu"));
-		    }
-			
-            [Fact]
+			[Fact]
 			public void PrologEngineCanSolveUnaryPredicates()
 			{
-				var facts = new[] { "collab('afi').", "collab(lma)." };
-				System.IO.File.WriteAllLines(FactsFilePath, facts);
-
-				Provider.Fetch();
+				Provider.AddFacts(new[] { "collab('afi').", "collab(lma)." });
 				
 				var solutions = Provider.Solve("collab", "Collab").ToList();
 
 				Assert.Equal(2, solutions.Count);
-                Assert.True(solutions.All(s => s.ContainsKey("Collab")));
-			    var collabs = solutions.Select(s => s["Collab"]).ToList();
-                Assert.Contains("afi", collabs);
-                Assert.Contains("lma", collabs);
+				Assert.True(solutions.All(s => s.ContainsTerm("Collab")));
+				var collabs = solutions.Select(s => s.GetTermValue("Collab")).ToList();
+				Assert.Contains("afi", collabs);
+				Assert.Contains("lma", collabs);
 			}
 
 			[Fact]
@@ -154,13 +144,13 @@ namespace Sonata.Security.Tests.Permissions
 				};
 				System.IO.File.WriteAllLines(FactsFilePath, facts);
 
-				Provider.Fetch();
+				Provider.AddFacts(facts);
 
 				var solutions = Provider.Solve("collab", "Collab", "'ge'").ToList();
 
 				Assert.Equal(2, solutions.Count);
-				Assert.True(solutions.All(s => s.ContainsKey("Collab")));
-				var collabs = solutions.Select(s => s["Collab"]).ToList();
+				Assert.True(solutions.All(s => s.ContainsTerm("Collab")));
+				var collabs = solutions.Select(s => s.GetTermValue("Collab")).ToList();
 				Assert.Contains("afi", collabs);
 				Assert.Contains("lma", collabs);
 			}
@@ -172,17 +162,15 @@ namespace Sonata.Security.Tests.Permissions
 					"responsableActivite(afi, \".A1\").",
 					"responsableActivite(afi, _).",
 				};
-				System.IO.File.WriteAllLines(FactsFilePath, facts);
-
-				Provider.Fetch();
+				
+				Provider.AddFacts(facts);
 
 				var solutions = Provider.Solve("responsableActivite", "afi", "Activite").ToList();
 
-				Assert.Equal(2, solutions.Count);
-				Assert.True(solutions.All(s => s.ContainsKey("Activite")));
-				var activites = solutions.Select(s => s["Activite"]).ToList();
+				Assert.Single(solutions);
+				Assert.True(solutions.All(s => s.ContainsTerm("Activite")));
+				var activites = solutions.Select(s => s.GetTermValue("Activite")).ToList();
 				Assert.Equal("\".A1\"", activites[0]);
-				Assert.Null(activites[1]);
 			}
 		}
 
@@ -221,7 +209,8 @@ namespace Sonata.Security.Tests.Permissions
 			{
 				System.IO.File.WriteAllLines(FactsFilePath, Facts);
 				System.IO.File.WriteAllLines(RulesFilePath, Rules);
-				Provider.Fetch();
+				Provider.AddFacts(Facts);
+				Provider.AddRules(Rules);
 			}
 		}
 
@@ -241,11 +230,11 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void GetAuthorizedTargetReturnsAllTargetsMatchingTheRequest()
 			{
-				var request = new PermissionRequest { User = "alice", Action = "lecture", Entity = "stuff"};
+				var request = new PermissionRequest { User = "alice", Action = "lecture", Entity = "stuff" };
 
 				var targets = Provider.GetAuthorizedTargets(request);
 
-				Assert.Equal(2, targets.Count);
+				Assert.Equal(2, targets.Count());
 				Assert.Contains("publicStuff", targets);
 				Assert.Contains("restrictedStuff", targets);
 			}
