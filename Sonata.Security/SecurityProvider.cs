@@ -79,8 +79,7 @@ namespace Sonata.Security
 				|| String.IsNullOrWhiteSpace(message))
 				return;
 
-			Console.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - {message}");
-			Debug.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - {message}");
+			System.Diagnostics.Trace.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - {message}");
 		}
 		
 		#endregion
