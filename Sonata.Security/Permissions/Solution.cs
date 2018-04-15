@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿#region Namespace Sonata.Security.Permission
+//	TODO
+#endregion
+
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
 
@@ -21,6 +25,13 @@ namespace Sonata.Security.Permissions
 		{
 			return ContainsTerm(name)
 				? this.Single(e => e.Name == name).Value
+				: null;
+		}
+
+		public string GetTypeValue(string name)
+		{
+			return ContainsTerm(name)
+				? this.Single(e => e.Name == name).Type
 				: null;
 		}
 

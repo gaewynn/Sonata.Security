@@ -29,6 +29,7 @@ namespace Sonata.Security.Permissions
 		#region Members
 
 		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
+		private readonly List<TermType> _solveResultsRefiners = new List<TermType> {TermType.Atom, TermType.String, TermType.Number};
 		private readonly string _factsFileFullName;
 		private readonly string _rulesFileFullName;
 		private readonly PrologEngine _prologEngine;
@@ -75,22 +76,27 @@ namespace Sonata.Security.Permissions
 			}
 		}
 
+		public virtual IEnumerable<Solution> Solve(string predicate, params string[] terms)
+		{
+			SecurityProvider.Trace($"Call to {nameof(Solve)}({predicate}, {(terms == null ? "null" : String.Join(", ", terms))})");
+			return Solve(true, predicate, terms);
+		}
+
 		/// <summary>
 		/// Evaluate a partially bound predicate (with Prolog variables) and returns the solutions as a collection of dictionaries.
 		/// </summary>
+		/// <param name="refineResults"></param>
 		/// <param name="predicate"></param>
 		/// <param name="terms"></param>
 		/// <returns></returns>
-		public virtual IEnumerable<Solution> Solve(string predicate, params string[] terms)
+		public virtual IEnumerable<Solution> Solve(bool refineResults, string predicate, params string[] terms)
 		{
 			SecurityProvider.Trace($"Call to {nameof(Solve)}");
 			try
 			{
 				var goal = BuildPredicate(predicate, terms);
 				SecurityProvider.Trace($"   Running predicate: {goal}");
-
-				//var tt = _prologEngine.GetFirstSolution(goal);
-
+				
 				var solveResults = _prologEngine.GetAllSolutions(goal, _factsFileFullName, _rulesFileFullName);
 				if (!solveResults.Success)
 					return new List<Solution>();
@@ -104,7 +110,9 @@ namespace Sonata.Security.Permissions
 							Value = variable.Value
 						})));
 
-				return solutions.Where(e => e.All(t => t.Type.ToLower() != "namedvar"));
+				return refineResults
+					? solutions.Where(e => e.Any(t => _solveResultsRefiners.Contains((TermType)Enum.Parse(typeof(TermType), t.Type, true))))
+					: solutions;
 			}
 			catch (Exception ex)
 			{
@@ -124,9 +132,14 @@ namespace Sonata.Security.Permissions
 		public virtual void AddFacts(IEnumerable<string> facts)
 		{
 			SecurityProvider.Trace($"Call to {nameof(AddFacts)}");
-			SecurityProvider.Trace($"   Adding facts: {String.Join("; ", facts)}");
 
-			AddPredicates(facts, _factsFileFullName);
+			if (facts == null)
+				return;
+
+			var addedFacts = facts as string[] ?? facts.ToArray();
+			SecurityProvider.Trace($"   Adding facts: {String.Join("; ", addedFacts)}");
+
+			AddPredicates(addedFacts, _factsFileFullName);
 		}
 
 		public virtual void RemoveFact(string fact)
@@ -140,9 +153,11 @@ namespace Sonata.Security.Permissions
 		public virtual void RemoveFacts(IEnumerable<string> facts)
 		{
 			SecurityProvider.Trace($"Call to {nameof(RemoveFacts)}");
-			SecurityProvider.Trace($"   Removing facts: {String.Join("; ", facts)}");
 
-			RemovePredicates(facts, _factsFileFullName);
+			var removedFacts = facts as string[] ?? facts.ToArray();
+			SecurityProvider.Trace($"   Removing facts: {String.Join("; ", removedFacts)}");
+
+			RemovePredicates(removedFacts, _factsFileFullName);
 		}
 
 		public virtual void AddRule(string rule)
@@ -156,9 +171,11 @@ namespace Sonata.Security.Permissions
 		public virtual void AddRules(IEnumerable<string> rules)
 		{
 			SecurityProvider.Trace($"Call to {nameof(AddRules)}");
-			SecurityProvider.Trace($"   Adding rules: {String.Join("; ", rules)}");
 
-			AddPredicates(rules, _rulesFileFullName);
+			var addedRules = rules as string[] ?? rules.ToArray();
+			SecurityProvider.Trace($"   Adding rules: {String.Join("; ", addedRules)}");
+
+			AddPredicates(addedRules, _rulesFileFullName);
 		}
 
 		public virtual void RemoveRule(string rule)
@@ -172,9 +189,11 @@ namespace Sonata.Security.Permissions
 		public virtual void RemoveRules(IEnumerable<string> rules)
 		{
 			SecurityProvider.Trace($"Call to {nameof(RemoveRules)}");
-			SecurityProvider.Trace($"   Removing rules: {String.Join("; ", rules)}");
 
-			RemovePredicates(rules, _rulesFileFullName);
+			var removedRules = rules as string[] ?? rules.ToArray();
+			SecurityProvider.Trace($"   Removing rules: {String.Join("; ", removedRules)}");
+
+			RemovePredicates(removedRules, _rulesFileFullName);
 		}
 
 		public virtual bool IsAuthorized(PermissionRequest request)
@@ -226,7 +245,7 @@ namespace Sonata.Security.Permissions
 					TermTarget,
 					request.Entity,
 					request.Action);
-
+				
 				return solutions.Select(solution => solution.GetTermValue(TermTarget).Trim('\''));
 			}
 			catch (Exception ex)
@@ -362,12 +381,14 @@ namespace Sonata.Security.Permissions
 		private void AddPredicates(IEnumerable<string> predicates, string file)
 		{
 			SecurityProvider.Trace($"Call to {nameof(AddPredicates)}");
-			SecurityProvider.Trace($"   Adding predicates: {String.Join("; ", predicates)}");
+
+			var addedPredicates = predicates as string[] ?? predicates.ToArray();
+			SecurityProvider.Trace($"   Adding predicates: {String.Join("; ", addedPredicates)}");
 
 			var filePredicates = System.IO.File.ReadAllLines(file).ToList();
 
 			SecurityProvider.Trace("   Appending predicates...");
-			foreach (var predicate in predicates)
+			foreach (var predicate in addedPredicates)
 			{
 				if (filePredicates.Contains(predicate))
 					SecurityProvider.Trace($"   Predicate {predicate} already exists: nothing to do.");
@@ -382,12 +403,14 @@ namespace Sonata.Security.Permissions
 		private void RemovePredicates(IEnumerable<string> predicates, string file)
 		{
 			SecurityProvider.Trace($"Call to {nameof(RemovePredicates)}");
-			SecurityProvider.Trace($"   Removing predicates: {String.Join("; ", predicates)} from file {file}");
+
+			var removedPredicates = predicates as string[] ?? predicates.ToArray();
+			SecurityProvider.Trace($"   Removing predicates: {String.Join("; ", removedPredicates)} from file {file}");
 
 			var filePredicates = System.IO.File.ReadAllLines(file).ToList();
 
 			SecurityProvider.Trace("   Removing predicates...");
-			foreach (var predicate in predicates)
+			foreach (var predicate in removedPredicates)
 			{
 				var predicateIndex = filePredicates.IndexOf(predicate);
 				if (predicateIndex < 0)
@@ -416,7 +439,8 @@ namespace Sonata.Security.Permissions
 		{
 			if (value == null)
 			{
-				throw new ArgumentException(propertyName + " can not be empty or whitespace.",
+				throw new ArgumentException(
+					$"{propertyName} can not be empty or whitespace.",
 					propertyName);
 			}
 		}

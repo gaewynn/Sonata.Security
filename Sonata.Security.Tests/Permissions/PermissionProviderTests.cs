@@ -94,7 +94,7 @@ namespace Sonata.Security.Tests.Permissions
 			{
 				var initialContent = new[] { "admin(abc).", "admin(def).", "admin(xyz)." };
 				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
-				
+
 				const string factToRemove = "admin(def).";
 
 				Provider.RemoveFact(factToRemove);
@@ -114,7 +114,7 @@ namespace Sonata.Security.Tests.Permissions
 			{
 				Provider.AddFacts(new[] { "homme(socrate).", "droid(r2d2)." });
 				Provider.AddRules(new[] { "mortel(Personne):-homme(Personne)." });
-				
+
 				Assert.True(Provider.Eval("mortel", "socrate"));
 				Assert.False(Provider.Eval("mortel", "r2d2"));
 				Assert.True(Provider.Eval("mortel", "Inconnu"));
@@ -124,7 +124,7 @@ namespace Sonata.Security.Tests.Permissions
 			public void PrologEngineCanSolveUnaryPredicates()
 			{
 				Provider.AddFacts(new[] { "collab('afi').", "collab(lma)." });
-				
+
 				var solutions = Provider.Solve("collab", "Collab").ToList();
 
 				Assert.Equal(2, solutions.Count);
@@ -160,17 +160,19 @@ namespace Sonata.Security.Tests.Permissions
 			{
 				var facts = new[] {
 					"responsableActivite(afi, \".A1\").",
+					"responsableActivite(afi, 2).",
 					"responsableActivite(afi, _).",
 				};
-				
+
 				Provider.AddFacts(facts);
 
 				var solutions = Provider.Solve("responsableActivite", "afi", "Activite").ToList();
 
-				Assert.Single(solutions);
+				Assert.Equal(2, solutions.Count);
 				Assert.True(solutions.All(s => s.ContainsTerm("Activite")));
 				var activites = solutions.Select(s => s.GetTermValue("Activite")).ToList();
-				Assert.Equal("\".A1\"", activites[0]);
+				Assert.Contains("\".A1\"", activites);
+				Assert.Contains("2", activites);
 			}
 		}
 
@@ -252,6 +254,52 @@ namespace Sonata.Security.Tests.Permissions
 				Assert.Equal("stuff", permission.Entity);
 				Assert.Null(permission.Target);
 				Assert.Equal(AccessTypes.Read | AccessTypes.Update, permission.AccessTypes);
+			}
+		}
+
+		public class GetUserPermissionsTests : PermissionProviderTestBench
+		{
+			[Fact]
+			public void GetUserPermissions()
+			{
+				string[] facts = {
+					"admin(jdl).",
+					"admin(tng).",
+					"admin(obl).",
+					"admin(viq).",
+					"admin(afi)."
+				};
+
+				string[] rules = {
+					"entite(collaborateur).",
+					"action(lecture).",
+					"action(ajouter).",
+					"action(supprimer).",
+					"action(modifier).",
+					"authorisation(Utilisateur, _, collaborateur, Action):-admin(Utilisateur),action(Action).",
+					"authorisation(_, _, collaborateur, lecture):-true."
+				};
+
+				Provider.AddFacts(facts);
+				Provider.AddRules(rules);
+
+				var userPermissions = Provider.GetUserPermissions(new PermissionRequest
+				{
+					User = "afi"
+				});
+
+
+
+
+
+
+
+
+
+
+
+
+
 			}
 		}
 	}

@@ -9,9 +9,6 @@ namespace Sonata.Security.Permissions
 	[DataContract(Name = "permissionRequest")]
 	public sealed class PermissionRequest
 	{
-		[DataMember(Name = "applicationToken")]
-		public string ApplicationToken { get; set; }
-
 		[DataMember(Name = "user")]
 		public string User { get; set; }
 

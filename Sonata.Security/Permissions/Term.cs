@@ -1,4 +1,8 @@
-﻿using System.Diagnostics;
+﻿#region Namespace Sonata.Security.Permission
+//	TODO
+#endregion
+
+using System.Diagnostics;
 using System.Runtime.Serialization;
 
 namespace Sonata.Security.Permissions
@@ -7,6 +11,8 @@ namespace Sonata.Security.Permissions
 	[DataContract(Name = "term")]
 	public class Term
 	{
+		#region Properties
+
 		[DataMember(Name = "type")]
 		public string Type { get; set; }
 
@@ -15,5 +21,7 @@ namespace Sonata.Security.Permissions
 
 		[DataMember(Name = "value")]
 		public string Value { get; set; }
+
+		#endregion
 	}
 }
