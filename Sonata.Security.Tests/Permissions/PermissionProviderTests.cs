@@ -283,23 +283,26 @@ namespace Sonata.Security.Tests.Permissions
 				Provider.AddFacts(facts);
 				Provider.AddRules(rules);
 
-				var userPermissions = Provider.GetUserPermissions(new PermissionRequest
-				{
-					User = "afi"
-				});
+				var userPermissions = Provider.GetUserPermissions(new PermissionRequest { User = "afi" }).ToList();
+				Assert.NotNull(userPermissions);
+				Assert.Single(userPermissions);
+				Assert.Equal("collaborateur", userPermissions.ElementAt(0).Entity);
+				Assert.True(userPermissions.ElementAt(0).HasCreateAccess);
+				Assert.True(userPermissions.ElementAt(0).HasReadAccess);
+				Assert.True(userPermissions.ElementAt(0).HasUpdateAccess);
+				Assert.True(userPermissions.ElementAt(0).HasDeleteAccess);
 
+				Provider.RemoveRule("authorisation(Utilisateur, _, collaborateur, Action):-admin(Utilisateur),action(Action).");
+				Provider.AddRule("authorisation(Utilisateur, _, collaborateur, Action):-admin(Utilisateur),action(Action),Utilisateur\\=afi.");
 
-
-
-
-
-
-
-
-
-
-
-
+				userPermissions = Provider.GetUserPermissions(new PermissionRequest { User = "afi" }).ToList();
+				Assert.NotNull(userPermissions);
+				Assert.Single(userPermissions);
+				Assert.Equal("collaborateur", userPermissions.ElementAt(0).Entity);
+				Assert.False(userPermissions.ElementAt(0).HasCreateAccess);
+				Assert.True(userPermissions.ElementAt(0).HasReadAccess);
+				Assert.False(userPermissions.ElementAt(0).HasUpdateAccess);
+				Assert.False(userPermissions.ElementAt(0).HasDeleteAccess);
 			}
 		}
 	}
