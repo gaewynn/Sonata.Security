@@ -105,6 +105,17 @@ namespace Sonata.Security.Tests.Permissions
 				Assert.DoesNotContain(factToRemove, facts);
 				Assert.False(Provider.Eval("admin", "def"));
 			}
+
+			[Fact]
+			public void AddFactsInADiscontiguousWay()
+			{
+				Assert.Throws<Exception>(() =>
+				{
+					Provider.AddFact("planet(earth).");
+					Provider.AddFact("constellation(Andromeda).");
+					Provider.AddFact("planet(mars).");
+				});
+			}
 		}
 
 		public class RuntimeTests : PermissionProviderTestBench

@@ -98,6 +98,9 @@ namespace Sonata.Security.Permissions
 				SecurityProvider.Trace($"   Running predicate: {goal}");
 				
 				var solveResults = _prologEngine.GetAllSolutions(goal, _factsFileFullName, _rulesFileFullName);
+				if (solveResults.HasError)
+					throw new InvalidOperationException($"Error solving predicate {goal}: {solveResults.ErrMsg}");
+
 				if (!solveResults.Success)
 					return new List<Solution>();
 
@@ -211,9 +214,8 @@ namespace Sonata.Security.Permissions
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+				throw;
 			}
-
-			return false;
 		}
 
 		/// <summary>
@@ -251,7 +253,7 @@ namespace Sonata.Security.Permissions
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
-				return null;
+				throw;
 			}
 		}
 
@@ -302,9 +304,8 @@ namespace Sonata.Security.Permissions
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+				throw;
 			}
-
-			return null;
 		}
 
 		public virtual IEnumerable<string> GetEntityTargetPermissions(PermissionRequest request)
@@ -359,9 +360,8 @@ namespace Sonata.Security.Permissions
 			catch (Exception ex)
 			{
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+				throw;
 			}
-
-			return null;
 		}
 
 		public static string BuildPredicate(string functor, params string[] arguments)
