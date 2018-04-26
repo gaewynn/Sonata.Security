@@ -248,7 +248,7 @@ namespace Sonata.Security.Permissions
 					request.Entity,
 					request.Action);
 				
-				return solutions.Select(solution => solution.GetTermValue(TermTarget).Trim('\''));
+				return solutions.Select(solution => solution.GetTermValue(TermTarget)?.Trim('\'', '"'));
 			}
 			catch (Exception ex)
 			{
@@ -294,7 +294,7 @@ namespace Sonata.Security.Permissions
 
 				var access = solutions
 					.Aggregate(AccessTypes.None,
-					(accessType, solution) => accessType | ActionToAccessType(solution.GetTermValue(TermAction)));
+					(accessType, solution) => accessType | ActionToAccessType(solution.GetTermValue(TermAction)?.Trim('\'', '"')));
 
 				// Aucune Permission
 				permission.AccessTypes = access;
@@ -318,7 +318,7 @@ namespace Sonata.Security.Permissions
 				TermAction);
 
 			return solutions
-				.Select(s => s.GetTermValue(TermAction))
+				.Select(s => s.GetTermValue(TermAction)?.Trim('\'', '"'))
 				.Distinct()
 				.Where(action => Actions.Contains(action));
 		}
@@ -347,13 +347,13 @@ namespace Sonata.Security.Permissions
 					TermAction);
 
 				return solutions
-					.GroupBy(solution => new { Target = solution.GetTermValue(TermTarget), Entity = solution.GetTermValue(TermEntity) })
+					.GroupBy(solution => new { Target = solution.GetTermValue(TermTarget)?.Trim('\'', '"'), Entity = solution.GetTermValue(TermEntity)?.Trim('\'', '"') })
 					.Select(accessGroup => new Permission
 					{
 						Target = accessGroup.Key.Target,
 						Entity = accessGroup.Key.Entity,
 						AccessTypes = accessGroup
-							.Select(solution => solution.GetTermValue(TermAction))
+							.Select(solution => solution.GetTermValue(TermAction)?.Trim('\'', '"'))
 							.Aggregate(AccessTypes.None, (accessType, action) => accessType | ActionToAccessType(action))
 					});
 			}
