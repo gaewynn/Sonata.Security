@@ -1,5 +1,6 @@
 ﻿using Sonata.Security.Permissions;
 using System;
+using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -26,12 +27,17 @@ namespace Sonata.Security.Tests.Permissions
 			protected readonly string FactsFilePath;
 			protected readonly string RulesFilePath;
 			protected readonly PermissionProvider Provider;
+			protected readonly PermissionProvider SampleProvider;
 
 			public PermissionProviderTestBench()
 			{
 				FactsFilePath = System.IO.Path.GetTempFileName();
 				RulesFilePath = System.IO.Path.GetTempFileName();
 				Provider = new PermissionProvider(FactsFilePath, RulesFilePath);
+
+				SampleProvider = new PermissionProvider(
+					Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName, "Prolog", "Sample-Facts.pl"),
+					Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName, "Prolog", "Sample-Rules.pl"));
 			}
 
 			private void ReleaseUnmanagedResources()
@@ -235,6 +241,19 @@ namespace Sonata.Security.Tests.Permissions
 				var request = new PermissionRequest { User = "bob" };
 
 				Assert.True(Provider.IsAuthorized(request));
+			}
+
+			[Fact]
+			public void IsAuthorisedReturnsTrueIfRuleExistsInPrologFile()
+			{
+				var request = new PermissionRequest
+				{
+					User = "afi",
+					Action = "lecture",
+					Entity = "collaborateur"
+				};
+
+				Assert.True(SampleProvider.IsAuthorized(request));
 			}
 		}
 

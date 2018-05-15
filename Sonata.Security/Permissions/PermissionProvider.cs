@@ -66,7 +66,10 @@ namespace Sonata.Security.Permissions
 				var goal = BuildPredicate(ruleName, arguments);
 				SecurityProvider.Trace($"   Running predicate: {goal}");
 
-				var result = _prologEngine.GetFirstSolution(goal);
+				var result = _prologEngine.GetFirstSolution(goal, _factsFileFullName, _rulesFileFullName);
+				if (_prologEngine.Error)
+					throw new InvalidOperationException(result.ToString());
+
 				return result.Solved;
 			}
 			catch (Exception ex)
