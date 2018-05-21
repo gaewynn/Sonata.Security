@@ -1,148 +1,108 @@
-﻿using Sonata.Security.Permissions;
-using System;
-using System.IO;
+﻿using System;
 using System.Linq;
+using Sonata.Security.Permissions;
+using Sonata.Security.Tests.Permissions.Fixtures;
 using Xunit;
 
 namespace Sonata.Security.Tests.Permissions
 {
+	[CollectionDefinition("PermissionProvider_Collection")]
+	public class PermissionProviderCollection : ICollectionFixture<PermissionProviderFixture>
+	{
+		// This class has no code, and is never created. Its purpose is simply
+		// to be the place to apply [CollectionDefinition] and all the
+		// ICollectionFixture<> interfaces.
+	}
+
+	[CollectionDefinition("PermissionProvider_ManagePredicates_Collection")]
+	public class PermissionProviderManagePredicatesCollection : ICollectionFixture<PermissionProviderFixture>
+	{
+		// This class has no code, and is never created. Its purpose is simply
+		// to be the place to apply [CollectionDefinition] and all the
+		// ICollectionFixture<> interfaces.
+	}
+
+	[Collection("PermissionProvider_Collection")]
 	public class PermissionProviderTests
 	{
-		public PermissionProviderTests()
+		#region Members
+
+		protected readonly PermissionProviderFixture Fixture;
+
+		#endregion
+
+		#region Constructors
+
+		public PermissionProviderTests(PermissionProviderFixture fixture)
 		{
-			SecurityProvider.Configure(true);
+			Fixture = fixture;
 		}
 
-		[Fact]
-		public void PrologStructCanBeSerializedAsString()
-		{
-			var goal = PermissionProvider.BuildPredicate("authorisation", "argument1", "argument2", null);
-			const string expected = "authorisation(argument1, argument2, _).";
+		#endregion
 
-			Assert.Equal(expected, goal);
+		public class BuildPredicateTests : PermissionProviderTests
+		{
+			#region Constructors
+
+			public BuildPredicateTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
+
+			#endregion
+
+			#region Methods
+
+			[Fact]
+			public void PrologStructCanBeSerializedAsString()
+			{
+				var goal = PermissionProvider.BuildPredicate("authorisation", "argument1", "argument2", null);
+				const string expected = "authorisation(argument1, argument2, _).";
+
+				Assert.Equal(expected, goal);
+			}
+
+			#endregion
 		}
-
-		public class PermissionProviderTestBench : IDisposable
+		
+		public class EvalTests : PermissionProviderTests
 		{
-			protected readonly string FactsFilePath;
-			protected readonly string RulesFilePath;
-			protected readonly PermissionProvider Provider;
-			protected readonly PermissionProvider SampleProvider;
+			#region Constructors
 
-			public PermissionProviderTestBench()
-			{
-				FactsFilePath = System.IO.Path.GetTempFileName();
-				RulesFilePath = System.IO.Path.GetTempFileName();
-				Provider = new PermissionProvider(FactsFilePath, RulesFilePath);
+			public EvalTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
 
-				SampleProvider = new PermissionProvider(
-					Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName, "Prolog", "Sample-Facts.pl"),
-					Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName, "Prolog", "Sample-Rules.pl"));
-			}
+			#endregion
 
-			private void ReleaseUnmanagedResources()
-			{
-				if (FactsFilePath != null)
-				{
-					System.IO.File.Delete(FactsFilePath);
-				}
-				if (RulesFilePath != null)
-				{
-					System.IO.File.Delete(RulesFilePath);
-				}
-			}
+			#region Methods
 
-			public void Dispose()
-			{
-				ReleaseUnmanagedResources();
-				GC.SuppressFinalize(this);
-			}
-
-			~PermissionProviderTestBench()
-			{
-				ReleaseUnmanagedResources();
-			}
-		}
-
-		public class FactsTests : PermissionProviderTestBench
-		{
-			[Fact]
-			public void AddFactAddsANewFactToTheFile()
-			{
-				const string fact = "admin(xyz).";
-				Provider.AddFact(fact);
-
-				var lastFact = System.IO.File.ReadAllLines(FactsFilePath).LastOrDefault();
-				Assert.Equal(fact, lastFact);
-				Assert.True(Provider.Eval("admin", "xyz"));
-			}
-
-			[Fact]
-			public void DuplicateAFactDoesNotChangeTheFile()
-			{
-				const string fact = "admin(xyz).";
-				Provider.AddFact(fact);
-				Provider.AddFact(fact);
-
-				var facts = System.IO.File.ReadAllLines(FactsFilePath);
-				var duplicates = facts
-					.GroupBy(f => f)
-					.Where(factsGroup => factsGroup.Count() > 1)
-					.Select(factsGroup => factsGroup.Key);
-
-				Assert.Empty(duplicates);
-				Assert.Contains(fact, facts);
-				Assert.True(Provider.Eval("admin", "xyz"));
-			}
-
-			[Fact]
-			public void RemoveFactRemovesTheFact()
-			{
-				var initialContent = new[] { "admin(abc).", "admin(def).", "admin(xyz)." };
-				System.IO.File.WriteAllLines(FactsFilePath, initialContent);
-
-				const string factToRemove = "admin(def).";
-
-				Provider.RemoveFact(factToRemove);
-
-				var facts = System.IO.File.ReadAllLines(FactsFilePath);
-
-				Assert.Equal(2, facts.Length);
-				Assert.DoesNotContain(factToRemove, facts);
-				Assert.False(Provider.Eval("admin", "def"));
-			}
-
-			[Fact]
-			public void AddFactsInADiscontiguousWay()
-			{
-				Assert.Throws<Exception>(() =>
-				{
-					Provider.AddFact("planet(earth).");
-					Provider.AddFact("constellation(Andromeda).");
-					Provider.AddFact("planet(mars).");
-				});
-			}
-		}
-
-		public class RuntimeTests : PermissionProviderTestBench
-		{
 			[Fact]
 			public void PrologEngineCanEvalPredicates()
 			{
-				Provider.AddFacts(new[] { "homme(socrate).", "droid(r2d2)." });
-				Provider.AddRules(new[] { "mortel(Personne):-homme(Personne)." });
-
-				Assert.True(Provider.Eval("mortel", "socrate"));
-				Assert.False(Provider.Eval("mortel", "r2d2"));
-				Assert.True(Provider.Eval("mortel", "Inconnu"));
+				Assert.True(Fixture.Provider.Eval("mortel", "socrate"));
+				Assert.False(Fixture.Provider.Eval("mortel", "r2d2"));
+				Assert.True(Fixture.Provider.Eval("mortel", "Inconnu"));
 			}
+
+			#endregion
+		}
+
+		public class SolveTests : PermissionProviderTests
+		{
+			#region Constructors
+
+			public SolveTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
+
+			#endregion
+
+			#region Methods
 
 			[Fact]
 			public void PrologEngineCanSolveUnaryPredicates()
 			{
-				Provider.AddFacts(new[] { "collab('afi').", "collab(lma)." });
-
-				var solutions = Provider.Solve("collab", "Collab").ToList();
+				var solutions = Fixture.Provider.Solve("collab", "Collab").ToList();
 
 				Assert.Equal(2, solutions.Count);
 				Assert.True(solutions.All(s => s.ContainsTerm("Collab")));
@@ -154,16 +114,7 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void PrologEngineCanSolveBinaryPredicates()
 			{
-				var facts = new[] {
-					"collab(afi, ge).",
-					"collab(lma, ge).",
-					"collab(obl, ls)."
-				};
-				System.IO.File.WriteAllLines(FactsFilePath, facts);
-
-				Provider.AddFacts(facts);
-
-				var solutions = Provider.Solve("collab", "Collab", "'ge'").ToList();
+				var solutions = Fixture.Provider.Solve("collab", "Collab", "'ge'").ToList();
 
 				Assert.Equal(2, solutions.Count);
 				Assert.True(solutions.All(s => s.ContainsTerm("Collab")));
@@ -175,15 +126,7 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void PrologEngineCanSolveUnboundPredicatesWithWildcards()
 			{
-				var facts = new[] {
-					"responsableActivite(afi, \".A1\").",
-					"responsableActivite(afi, 2).",
-					"responsableActivite(afi, _).",
-				};
-
-				Provider.AddFacts(facts);
-
-				var solutions = Provider.Solve("responsableActivite", "afi", "Activite").ToList();
+				var solutions = Fixture.Provider.Solve("responsableActivite", "afi", "Activite").ToList();
 
 				Assert.Equal(2, solutions.Count);
 				Assert.True(solutions.All(s => s.ContainsTerm("Activite")));
@@ -191,56 +134,28 @@ namespace Sonata.Security.Tests.Permissions
 				Assert.Contains("\".A1\"", activites);
 				Assert.Contains("2", activites);
 			}
+
+			#endregion
 		}
 
-		// TODO Add a test for wildcard variables in the rules (_).
-		// In this case, the variables are not bound to any value in the solution
-		// So the variables dictionary has no key for this variable
-		// One way to handle this would be to pass the list of variables to Solve or parsing the query to extract variables,
-		// and preload the dictionary with noll values for each variable.
-		public class AuthorizationManagerTestBench : PermissionProviderTestBench
+		public class IsAuthorizedTests : PermissionProviderTests
 		{
-			private static readonly string[] Facts = {
-				"powerUser(alice).",
-				"powerUser(bob).",
-				"administrator(bob).",
-				"chuckNorris(chuck).",
-			};
+			#region Constructors
 
-			private static readonly string[] Rules =
-			{
-				"authorisation(User, Target, stuff, Action):-userCanDoActionOnTarget(User, Action, Target).",
-				"is_user(User):-is_powerUser(User).",
-				"is_powerUser(User):-powerUser(User).",
-				"is_powerUser(User):-is_administrator(User).",
-				"is_administrator(User):-administrator(User).",
-				"is_administrator(User):-is_chuckNorris(User).",
-				"is_chuckNorris(User):-chuckNorris(User).",
-				"userCanDoActionOnTarget(User, lecture, publicStuff):-is_user(User).",
-				"userCanDoActionOnTarget(User, modifier, publicStuff):-is_powerUser(User).",
-				"userCanDoActionOnTarget(User, lecture, restrictedStuff):-is_powerUser(User).",
-				"userCanDoActionOnTarget(User, modifier, restrictedStuff):-is_administrator(User).",
-				"userCanDoActionOnTarget(User, lecture, adminStuff):-is_administrator(User).",
-				"userCanDoActionOnTarget(User, _, _):-is_chuckNorris(User).",
-			};
+			public IsAuthorizedTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
 
-			public AuthorizationManagerTestBench()
-			{
-				System.IO.File.WriteAllLines(FactsFilePath, Facts);
-				System.IO.File.WriteAllLines(RulesFilePath, Rules);
-				Provider.AddFacts(Facts);
-				Provider.AddRules(Rules);
-			}
-		}
+			#endregion
 
-		public class IsAuthorizedTests : AuthorizationManagerTestBench
-		{
+			#region Methods
+
 			[Fact]
 			public void IsAuthorisedReturnsTrueIfRuleExistsInProlog()
 			{
 				var request = new PermissionRequest { User = "bob" };
 
-				Assert.True(Provider.IsAuthorized(request));
+				Assert.True(Fixture.Provider.IsAuthorized(request));
 			}
 
 			[Fact]
@@ -253,67 +168,83 @@ namespace Sonata.Security.Tests.Permissions
 					Entity = "collaborateur"
 				};
 
-				Assert.True(SampleProvider.IsAuthorized(request));
+				Assert.True(Fixture.SampleProvider.IsAuthorized(request));
 			}
+
+			#endregion
 		}
 
-		public class GetAuthorizedTargetsTests : AuthorizationManagerTestBench
+		public class GetAuthorizedTargetsTests : PermissionProviderTests
 		{
+			#region Constructors
+
+			public GetAuthorizedTargetsTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
+
+			#endregion
+
+			#region Methods
+
 			[Fact]
 			public void GetAuthorizedTargetReturnsAllTargetsMatchingTheRequest()
 			{
 				var request = new PermissionRequest { User = "alice", Action = "lecture", Entity = "stuff" };
 
-				var targets = Provider.GetAuthorizedTargets(request);
+				var targets = Fixture.Provider.GetAuthorizedTargets(request)?.Distinct().ToList();
 
-				Assert.Equal(2, targets.Count());
+				Assert.NotNull(targets);
+				Assert.Equal(2, targets.Count);
 				Assert.Contains("publicStuff", targets);
 				Assert.Contains("restrictedStuff", targets);
 			}
+
+			#endregion
 		}
 
-		public class GetTargetPermissionsTests : AuthorizationManagerTestBench
+		public class GetTargetPermissionsTests : PermissionProviderTests
 		{
+			#region Constructors
+
+			public GetTargetPermissionsTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
+
+			#endregion
+
+			#region Methods
+
 			[Fact]
 			public void GetTargetPermissionsReturnsThePermissionsForTheUserAndEntity()
 			{
 				var request = new PermissionRequest { User = "alice", Entity = "stuff" };
 
-				var permission = Provider.GetTargetPermissions(request);
+				var permission = Fixture.Provider.GetTargetPermissions(request);
 
 				Assert.Equal("stuff", permission.Entity);
 				Assert.Null(permission.Target);
 				Assert.Equal(AccessTypes.Read | AccessTypes.Update, permission.AccessTypes);
 			}
+
+			#endregion
 		}
 
-		public class GetUserPermissionsTests : PermissionProviderTestBench
+		public class GetUserPermissionsTests : PermissionProviderTests
 		{
+			#region Constructors
+
+			public GetUserPermissionsTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
+
+			#endregion
+
+			#region Methods
+
 			[Fact]
 			public void GetUserPermissions()
 			{
-				string[] facts = {
-					"admin(jdl).",
-					"admin(tng).",
-					"admin(obl).",
-					"admin(viq).",
-					"admin(afi)."
-				};
-
-				string[] rules = {
-					"entite(collaborateur).",
-					"action(lecture).",
-					"action(ajouter).",
-					"action(supprimer).",
-					"action(modifier).",
-					"authorisation(Utilisateur, _, collaborateur, Action):-admin(Utilisateur),action(Action).",
-					"authorisation(_, _, collaborateur, lecture):-true."
-				};
-
-				Provider.AddFacts(facts);
-				Provider.AddRules(rules);
-
-				var userPermissions = Provider.GetUserPermissions(new PermissionRequest { User = "afi" }).ToList();
+				var userPermissions = Fixture.Provider.GetUserPermissions(new PermissionRequest { User = "afi" }).ToList();
 				Assert.NotNull(userPermissions);
 				Assert.Single(userPermissions);
 				Assert.Equal("collaborateur", userPermissions.ElementAt(0).Entity);
@@ -321,19 +252,100 @@ namespace Sonata.Security.Tests.Permissions
 				Assert.True(userPermissions.ElementAt(0).HasReadAccess);
 				Assert.True(userPermissions.ElementAt(0).HasUpdateAccess);
 				Assert.True(userPermissions.ElementAt(0).HasDeleteAccess);
-
-				Provider.RemoveRule("authorisation(Utilisateur, _, collaborateur, Action):-admin(Utilisateur),action(Action).");
-				Provider.AddRule("authorisation(Utilisateur, _, collaborateur, Action):-admin(Utilisateur),action(Action),Utilisateur\\=afi.");
-
-				userPermissions = Provider.GetUserPermissions(new PermissionRequest { User = "afi" }).ToList();
-				Assert.NotNull(userPermissions);
-				Assert.Single(userPermissions);
-				Assert.Equal("collaborateur", userPermissions.ElementAt(0).Entity);
-				Assert.False(userPermissions.ElementAt(0).HasCreateAccess);
-				Assert.True(userPermissions.ElementAt(0).HasReadAccess);
-				Assert.False(userPermissions.ElementAt(0).HasUpdateAccess);
-				Assert.False(userPermissions.ElementAt(0).HasDeleteAccess);
 			}
+
+			#endregion
+		}
+	}
+
+	[Collection("PermissionProvider_ManagePredicates_Collection")]
+	public class PermissionProviderManagePredicatesTests
+	{
+		#region Members
+
+		protected readonly PermissionProviderFixture Fixture;
+
+		#endregion
+
+		#region Constructors
+
+		public PermissionProviderManagePredicatesTests(PermissionProviderFixture fixture)
+		{
+			Fixture = fixture;
+		}
+
+		#endregion
+
+		public class ManagePredicatesTests : PermissionProviderTests
+		{
+			#region Constructors
+
+			public ManagePredicatesTests(PermissionProviderFixture fixture)
+				: base(fixture)
+			{ }
+
+			#endregion
+
+			#region Methods
+
+			[Fact]
+			public void AddFactAddsANewFactToTheFile()
+			{
+				const string fact = "admin(xyz).";
+				Fixture.Provider.AddFact(fact);
+
+				var lastFact = System.IO.File.ReadAllLines(Fixture.FactsFilePath).LastOrDefault();
+				Assert.Equal(fact, lastFact);
+				Assert.True(Fixture.Provider.Eval("admin", "xyz"));
+			}
+
+			[Fact]
+			public void DuplicateAFactDoesNotChangeTheFile()
+			{
+				const string fact = "admin(xyz).";
+				Fixture.Provider.AddFact(fact);
+				Fixture.Provider.AddFact(fact);
+
+				var facts = System.IO.File.ReadAllLines(Fixture.FactsFilePath);
+				var duplicates = facts
+					.GroupBy(f => f)
+					.Where(factsGroup => factsGroup.Count() > 1)
+					.Select(factsGroup => factsGroup.Key);
+
+				Assert.Empty(duplicates);
+				Assert.Contains(fact, facts);
+				Assert.True(Fixture.Provider.Eval("admin", "xyz"));
+			}
+
+			[Fact]
+			public void RemoveFactRemovesTheFact()
+			{
+				var initialContent = new[] { "admin(abc).", "admin(def).", "admin(xyz)." };
+				System.IO.File.WriteAllLines(Fixture.FactsFilePath, initialContent);
+
+				const string factToRemove = "admin(def).";
+
+				Fixture.Provider.RemoveFact(factToRemove);
+
+				var facts = System.IO.File.ReadAllLines(Fixture.FactsFilePath);
+
+				Assert.Equal(2, facts.Length);
+				Assert.DoesNotContain(factToRemove, facts);
+				Assert.False(Fixture.Provider.Eval("admin", "def"));
+			}
+
+			[Fact]
+			public void AddFactsInADiscontiguousWay()
+			{
+				Assert.Throws<Exception>(() =>
+				{
+					Fixture.Provider.AddFact("planet(earth).");
+					Fixture.Provider.AddFact("constellation(Andromeda).");
+					Fixture.Provider.AddFact("planet(mars).");
+				});
+			}
+
+			#endregion
 		}
 	}
 }

@@ -6,6 +6,7 @@ using Sonata.Security.Principal;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 
 namespace Sonata.Security
 {
@@ -79,9 +80,15 @@ namespace Sonata.Security
 				|| String.IsNullOrWhiteSpace(message))
 				return;
 
-			System.Diagnostics.Trace.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - {message}");
+			System.Diagnostics.Trace.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - [{System.Threading.Thread.CurrentThread.ManagedThreadId}] - {message}");
+
+			lock (Lock)
+			{
+				File.AppendAllLines(@"C:\Temp\Sonata.Security.log", new List<string>{ $"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - [{System.Threading.Thread.CurrentThread.ManagedThreadId}] - {message}" });
+			}
 		}
-		
+		private static readonly object Lock = new object();
+
 		#endregion
 	}
 }

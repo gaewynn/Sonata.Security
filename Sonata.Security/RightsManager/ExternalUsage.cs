@@ -341,26 +341,17 @@ namespace Prolog
 
 		#region GetAllSolutions
 		// Store solutions in an GetAllSolutions class
-		public SolutionSet GetAllSolutions(string query, params string[] sourceFileNames)
+		public SolutionSet GetAllSolutions(string query)
 		{
-			return GetAllSolutions(query, 0, sourceFileNames);
+			return GetAllSolutions(query, 0);
 		}
 
-		public SolutionSet GetAllSolutions(string query, int maxSolutionCount, params string[] sourceFileNames)
+		public SolutionSet GetAllSolutions(string query, int maxSolutionCount)
 		{
-			Reset();
 			SolutionSet solutions = new SolutionSet();
 
 			try
 			{
-				if (sourceFileNames != null)
-				{
-					foreach (var sourceFileName in sourceFileNames)
-					{
-						Consult(sourceFileName);
-					}
-				}
-
 				Query = solutions.Query = query + (query.EndsWith(".") ? null : "."); // append a dot if necessary
 				int i = 0;
 				bool found = false;

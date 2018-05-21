@@ -29,7 +29,7 @@ namespace Sonata.Security.Permissions
 		#region Members
 
 		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
-		private readonly List<TermType> _solveResultsRefiners = new List<TermType> {TermType.Atom, TermType.String, TermType.Number};
+		private readonly List<TermType> _solveResultsRefiners = new List<TermType> { TermType.Atom, TermType.String, TermType.Number };
 		private readonly string _factsFileFullName;
 		private readonly string _rulesFileFullName;
 		private readonly PrologEngine _prologEngine;
@@ -43,6 +43,8 @@ namespace Sonata.Security.Permissions
 			_factsFileFullName = factsFileFullName;
 			_rulesFileFullName = rulesFileFullName;
 			_prologEngine = new PrologEngine(false);
+
+			Reset();
 
 			SecurityProvider.Trace($"Facts file: {_factsFileFullName}");
 			SecurityProvider.Trace($"Rules file: {_rulesFileFullName}");
@@ -61,12 +63,13 @@ namespace Sonata.Security.Permissions
 		public virtual bool Eval(string ruleName = DefaultRuleName, params string[] arguments)
 		{
 			SecurityProvider.Trace($"Call to {nameof(Eval)}");
+
 			try
 			{
 				var goal = BuildPredicate(ruleName, arguments);
 				SecurityProvider.Trace($"   Running predicate: {goal}");
 
-				var result = _prologEngine.GetFirstSolution(goal, _factsFileFullName, _rulesFileFullName);
+				var result = _prologEngine.GetFirstSolution(goal);
 				if (_prologEngine.Error)
 					throw new InvalidOperationException(result.ToString());
 
@@ -95,12 +98,13 @@ namespace Sonata.Security.Permissions
 		public virtual IEnumerable<Solution> Solve(bool refineResults, string predicate, params string[] terms)
 		{
 			SecurityProvider.Trace($"Call to {nameof(Solve)}");
+
 			try
 			{
 				var goal = BuildPredicate(predicate, terms);
 				SecurityProvider.Trace($"   Running predicate: {goal}");
-				
-				var solveResults = _prologEngine.GetAllSolutions(goal, _factsFileFullName, _rulesFileFullName);
+
+				var solveResults = _prologEngine.GetAllSolutions(goal);
 				if (solveResults.HasError)
 					throw new InvalidOperationException($"Error solving predicate {goal}: {solveResults.ErrMsg}");
 
@@ -117,7 +121,8 @@ namespace Sonata.Security.Permissions
 						})));
 
 				return refineResults
-					? solutions.Where(e => e.Any(t => _solveResultsRefiners.Contains((TermType)Enum.Parse(typeof(TermType), t.Type, true))))
+					? solutions.Where(e =>
+						e.Any(t => _solveResultsRefiners.Contains((TermType)Enum.Parse(typeof(TermType), t.Type, true))))
 					: solutions;
 			}
 			catch (Exception ex)
@@ -250,7 +255,7 @@ namespace Sonata.Security.Permissions
 					TermTarget,
 					request.Entity,
 					request.Action);
-				
+
 				return solutions.Select(solution => solution.GetTermValue(TermTarget)?.Trim('\'', '"'));
 			}
 			catch (Exception ex)

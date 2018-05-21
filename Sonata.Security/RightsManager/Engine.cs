@@ -672,18 +672,8 @@ namespace Prolog
 		}
 
 
-		public ISolution GetFirstSolution(string query, params string[] sourceFileNames)
+		public ISolution GetFirstSolution(string query)
 		{
-			Reset();
-
-			if (sourceFileNames != null)
-			{
-				foreach (var sourceFileName in sourceFileNames)
-				{
-					Consult(sourceFileName);
-				}
-			}
-
 			Query = query;
 			IEnumerator<ISolution> solutions = SolutionIterator.GetEnumerator();
 			solutions.MoveNext();

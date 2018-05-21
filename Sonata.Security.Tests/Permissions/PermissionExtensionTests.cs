@@ -8,7 +8,7 @@ namespace Sonata.Security.Tests.Permissions
 	{
 		public PermissionExtensionTests()
 		{
-			SecurityProvider.Configure(true);
+			//SecurityProvider.Configure(true);
 		}
 
 		[Fact]
