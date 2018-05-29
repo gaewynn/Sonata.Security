@@ -8,7 +8,7 @@ namespace Sonata.Security.Tests.Permissions
 	{
 		public PermissionExtensionTests()
 		{
-			//SecurityProvider.Configure(true);
+			SecurityProvider.Configure(true);
 		}
 
 		[Fact]
@@ -52,6 +52,22 @@ namespace Sonata.Security.Tests.Permissions
 			var actual = "test".Quote();
 
 			Assert.Equal(@"'test'", actual);
+		}
+
+		[Fact]
+		public void AsDoubleQuotedStringPropagatesNull()
+		{
+			var actual = ((string)null).Quote();
+
+			Assert.Null(actual);
+		}
+
+		[Fact]
+		public void AsDoubleQuotedStringSurroundsStringWithSingleQuotes()
+		{
+			var actual = "test".Quote();
+
+			Assert.Equal("\"test\"", actual);
 		}
 
 	}

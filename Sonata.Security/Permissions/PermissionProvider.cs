@@ -437,10 +437,10 @@ namespace Sonata.Security.Permissions
 
 		protected static void QuotePermissionRequest(ref PermissionRequest request)
 		{
-			request.Target = request.Target.Quote();
-			request.Entity = request.Entity.Quote();
-			request.Action = request.Action.Quote();
-			request.User = request.User.Quote();
+			request.Target = request.Target.DoubleQuote();
+			request.Entity = request.Entity.DoubleQuote();
+			request.Action = request.Action.DoubleQuote();
+			request.User = request.User.DoubleQuote();
 		}
 
 		private static void AssertIsNotNull(string value, string propertyName)
