@@ -15,7 +15,7 @@ namespace Sonata.Security.Tests.Permissions
 		public void AsTermReturnsUnderscoreIfArgIsNull()
 		{
 			const string expected = "_";
-			var actual = ((string) null).AsTerm();
+			var actual = ((string) null).AsPrologConstant();
 
 			Assert.Equal(expected, actual);
 		}
@@ -24,7 +24,7 @@ namespace Sonata.Security.Tests.Permissions
 		public void AsTermReturnsUnderscoreIfArgIsEmpty()
 		{
 			const string expected = "_";
-			var actual = "".AsTerm();
+			var actual = "".AsPrologConstant();
 
 			Assert.Equal(expected, actual);
 		}
@@ -32,8 +32,8 @@ namespace Sonata.Security.Tests.Permissions
 		[Fact]
 		public void AsTermReturnsTermIfArgIsNotEmpty()
 		{
-			const string expected = "xyz";
-			var actual = "xyz".AsTerm();
+			const string expected = "\"xyz\"";
+			var actual = "xyz".AsPrologConstant();
 
 			Assert.Equal(expected, actual);
 		}
@@ -65,7 +65,7 @@ namespace Sonata.Security.Tests.Permissions
 		[Fact]
 		public void AsDoubleQuotedStringSurroundsStringWithSingleQuotes()
 		{
-			var actual = "test".Quote();
+			var actual = "test".DoubleQuote();
 
 			Assert.Equal("\"test\"", actual);
 		}

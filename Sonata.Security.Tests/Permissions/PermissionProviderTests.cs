@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Sonata.Security.Extensions;
 using Sonata.Security.Permissions;
 using Sonata.Security.Tests.Permissions.Fixtures;
 using Xunit;
@@ -56,7 +57,12 @@ namespace Sonata.Security.Tests.Permissions
 			public void PrologStructCanBeSerializedAsString()
 			{
 				var goal = PermissionProvider.BuildPredicate("authorisation", "argument1", "argument2", null);
-				const string expected = "authorisation(argument1, argument2, _).";
+				var expected = "authorisation(argument1, argument2, _).";
+
+				Assert.Equal(expected, goal);
+
+				goal = PermissionProvider.BuildPredicate("authorisation", "\"argument1\"", "\"argument2\"", null);
+				expected = "authorisation(\"argument1\", \"argument2\", _).";
 
 				Assert.Equal(expected, goal);
 			}
@@ -79,9 +85,9 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void PrologEngineCanEvalPredicates()
 			{
-				Assert.True(Fixture.Provider.Eval("mortel", "socrate"));
-				Assert.False(Fixture.Provider.Eval("mortel", "r2d2"));
-				Assert.True(Fixture.Provider.Eval("mortel", "Inconnu"));
+				Assert.True(Fixture.Provider.Eval("mortel", "\"socrate\""));
+				Assert.False(Fixture.Provider.Eval("mortel", "\"r2d2\""));
+				Assert.False(Fixture.Provider.Eval("mortel", "\"Inconnu\""));
 			}
 
 			#endregion
@@ -114,7 +120,7 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void PrologEngineCanSolveBinaryPredicates()
 			{
-				var solutions = Fixture.Provider.Solve("collab", "Collab", "'ge'").ToList();
+				var solutions = Fixture.Provider.Solve("collab", "Collab", "\"ge\"").ToList();
 
 				Assert.Equal(2, solutions.Count);
 				Assert.True(solutions.All(s => s.ContainsTerm("Collab")));
@@ -126,12 +132,12 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void PrologEngineCanSolveUnboundPredicatesWithWildcards()
 			{
-				var solutions = Fixture.Provider.Solve("responsableActivite", "afi", "Activite").ToList();
+				var solutions = Fixture.Provider.Solve("responsableActivite", "\"afi\"", "Activite").ToList();
 
 				Assert.Equal(2, solutions.Count);
 				Assert.True(solutions.All(s => s.ContainsTerm("Activite")));
 				var activites = solutions.Select(s => s.GetTermValue("Activite")).ToList();
-				Assert.Contains("\".A1\"", activites);
+				Assert.Contains(".A1", activites);
 				Assert.Contains("2", activites);
 			}
 
@@ -291,18 +297,18 @@ namespace Sonata.Security.Tests.Permissions
 			[Fact]
 			public void AddFactAddsANewFactToTheFile()
 			{
-				const string fact = "admin(xyz).";
+				const string fact = "admin(\"xyz\").";
 				Fixture.Provider.AddFact(fact);
 
 				var lastFact = System.IO.File.ReadAllLines(Fixture.FactsFilePath).LastOrDefault();
 				Assert.Equal(fact, lastFact);
-				Assert.True(Fixture.Provider.Eval("admin", "xyz"));
+				Assert.True(Fixture.Provider.Eval("admin", "xyz".AsPrologConstant()));
 			}
 
 			[Fact]
 			public void DuplicateAFactDoesNotChangeTheFile()
 			{
-				const string fact = "admin(xyz).";
+				const string fact = "admin(\"xyz\").";
 				Fixture.Provider.AddFact(fact);
 				Fixture.Provider.AddFact(fact);
 
@@ -314,16 +320,16 @@ namespace Sonata.Security.Tests.Permissions
 
 				Assert.Empty(duplicates);
 				Assert.Contains(fact, facts);
-				Assert.True(Fixture.Provider.Eval("admin", "xyz"));
+				Assert.True(Fixture.Provider.Eval("admin", "xyz".AsPrologConstant()));
 			}
 
 			[Fact]
 			public void RemoveFactRemovesTheFact()
 			{
-				var initialContent = new[] { "admin(abc).", "admin(def).", "admin(xyz)." };
+				var initialContent = new[] { "admin(\"abc\").", "admin(\"def\").", "admin(\"xyz\")." };
 				System.IO.File.WriteAllLines(Fixture.FactsFilePath, initialContent);
 
-				const string factToRemove = "admin(def).";
+				const string factToRemove = "admin(\"def\").";
 
 				Fixture.Provider.RemoveFact(factToRemove);
 
@@ -339,9 +345,9 @@ namespace Sonata.Security.Tests.Permissions
 			{
 				Assert.Throws<Exception>(() =>
 				{
-					Fixture.Provider.AddFact("planet(earth).");
-					Fixture.Provider.AddFact("constellation(Andromeda).");
-					Fixture.Provider.AddFact("planet(mars).");
+					Fixture.Provider.AddFact("planet(\"earth\").");
+					Fixture.Provider.AddFact("constellation(\"Andromeda\").");
+					Fixture.Provider.AddFact("planet(\"mars\").");
 				});
 			}
 

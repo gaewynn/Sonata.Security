@@ -58,7 +58,7 @@ namespace Sonata.Security.Permissions
 		/// Evaluate a predicate. The predicate can contain Prolog variables.
 		/// </summary>
 		/// <param name="ruleName"></param>
-		/// <param name="arguments"></param>
+		/// <param name="arguments">All constants must be rounded with a double quote when calling this methods. The method AsPrologConstant could be used.</param>
 		/// <returns></returns>
 		public virtual bool Eval(string ruleName = DefaultRuleName, params string[] arguments)
 		{
@@ -82,6 +82,12 @@ namespace Sonata.Security.Permissions
 			}
 		}
 
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="predicate"></param>
+		/// <param name="terms">All constants must be rounded with a double quote when calling this methods. The method AsPrologConstant could be used.</param>
+		/// <returns></returns>
 		public virtual IEnumerable<Solution> Solve(string predicate, params string[] terms)
 		{
 			SecurityProvider.Trace($"Call to {nameof(Solve)}({predicate}, {(terms == null ? "null" : String.Join(", ", terms))})");
@@ -93,7 +99,7 @@ namespace Sonata.Security.Permissions
 		/// </summary>
 		/// <param name="refineResults"></param>
 		/// <param name="predicate"></param>
-		/// <param name="terms"></param>
+		/// <param name="terms">All constants must be rounded with a double quote when calling this methods. The method AsPrologConstant could be used.</param>
 		/// <returns></returns>
 		public virtual IEnumerable<Solution> Solve(bool refineResults, string predicate, params string[] terms)
 		{
@@ -117,7 +123,7 @@ namespace Sonata.Security.Permissions
 						{
 							Type = variable.Type,
 							Name = variable.Name,
-							Value = variable.Value
+							Value = variable.Value?.Trim('\'').Trim('"')
 						})));
 
 				return refineResults
@@ -214,10 +220,10 @@ namespace Sonata.Security.Permissions
 			try
 			{
 				return Eval(DefaultRuleName,
-					request.User,
-					request.Target,
-					request.Entity,
-					request.Action);
+					request.User == null ? request.User : request.User.AsPrologConstant(),
+					request.Target == null ? request.Target : request.Target.AsPrologConstant(),
+					request.Entity == null ? request.Entity : request.Entity.AsPrologConstant(),
+					request.Action == null ? request.Action : request.Action.AsPrologConstant());
 			}
 			catch (Exception ex)
 			{
@@ -248,13 +254,11 @@ namespace Sonata.Security.Permissions
 				AssertIsNotNull(request.Action, nameof(request.Action));
 				AssertIsNotNull(request.Entity, nameof(request.Entity));
 
-				QuotePermissionRequest(ref request);
-
 				var solutions = Solve(DefaultRuleName,
-					request.User,
+					request.User.AsPrologConstant(),
 					TermTarget,
-					request.Entity,
-					request.Action);
+					request.Entity.AsPrologConstant(),
+					request.Action.AsPrologConstant());
 
 				return solutions.Select(solution => solution.GetTermValue(TermTarget)?.Trim('\'', '"'));
 			}
@@ -292,12 +296,10 @@ namespace Sonata.Security.Permissions
 					Entity = request.Entity,
 				};
 
-				QuotePermissionRequest(ref request);
-
 				var solutions = Solve(DefaultRuleName,
-					request.User,
-					request.Target,
-					request.Entity,
+					request.User.AsPrologConstant(),
+					request.Target == null ? request.Target : request.Target.AsPrologConstant(),
+					request.Entity.AsPrologConstant(),
 					TermAction);
 
 				var access = solutions
@@ -349,7 +351,7 @@ namespace Sonata.Security.Permissions
 				AssertIsNotNull(request.User, nameof(request.User));
 
 				var solutions = Solve(DefaultRuleName,
-					request.User,
+					request.User.AsPrologConstant(),
 					TermTarget,
 					TermEntity,
 					TermAction);
@@ -372,11 +374,10 @@ namespace Sonata.Security.Permissions
 			}
 		}
 
-		public static string BuildPredicate(string functor, params string[] arguments)
+		public static string BuildPredicate(string predicate, params string[] arguments)
 		{
-			var terms = arguments.Select(arg => arg.AsTerm());
-			var termList = string.Join(", ", terms);
-			return functor + "(" + termList + ").";
+			var constants = arguments.Select(e => e ?? "_");
+			return predicate + "(" + String.Join(", ", constants) + ").";
 		}
 
 		private void Reset()
@@ -435,13 +436,13 @@ namespace Sonata.Security.Permissions
 
 		#region Helpers
 
-		protected static void QuotePermissionRequest(ref PermissionRequest request)
-		{
-			request.Target = request.Target.DoubleQuote();
-			request.Entity = request.Entity.DoubleQuote();
-			request.Action = request.Action.DoubleQuote();
-			request.User = request.User.DoubleQuote();
-		}
+		//protected static void QuotePermissionRequest(ref PermissionRequest request)
+		//{
+		//	request.Target = request.Target.DoubleQuote();
+		//	request.Entity = request.Entity.DoubleQuote();
+		//	request.Action = request.Action.DoubleQuote();
+		//	request.User = request.User.DoubleQuote();
+		//}
 
 		private static void AssertIsNotNull(string value, string propertyName)
 		{

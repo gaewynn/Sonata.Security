@@ -1,5 +1,5 @@
-admin(jdl).
-admin(tng).
-admin(obl).
-admin(viq).
-admin(afi).
+admin("jdl").
+admin("tng").
+admin("obl").
+admin("viq").
+admin("afi").

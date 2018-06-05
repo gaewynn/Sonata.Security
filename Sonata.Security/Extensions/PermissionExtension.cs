@@ -3,16 +3,20 @@
 #endregion
 
 using System;
+using Sonata.Core.Extensions;
 
 namespace Sonata.Security.Extensions
 {
 	public static class PermissionExtensions
 	{
-		public static string AsTerm(this string value)
+		public static string AsPrologConstant(this string value)
 		{
+			if (value == "_")
+				return value;
+
 			return String.IsNullOrEmpty(value)
 				? "_"
-				: value;
+				: $"{value.DoubleQuote()}";
 		}
 	}
 }

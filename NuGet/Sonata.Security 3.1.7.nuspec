@@ -16,9 +16,9 @@
 		<tags>gaewynn sonata security</tags>
 		<language>en-US</language>
 		<dependencies>
-			<dependency id="Sonata.Core" version="1.0.4" />
-			<dependency id="Sonata.Diagnostics" version="2.0.4" />
-			<dependency id="System.Security.Principal.Windows" version="4.5.0-preview1-26216-02" />
+			<dependency id="Sonata.Core" version="1.0.5" />
+			<dependency id="Sonata.Diagnostics" version="2.0.7" />
+			<dependency id="System.Security.Principal.Windows" version="4.5.0" />
 		</dependencies>
 	</metadata>
 	<files>
