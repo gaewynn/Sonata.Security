@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace Sonata.Security.Permissions
 {
-	public class PermissionProvider
+    public class PermissionProvider
 	{
 		#region Constants
 
@@ -20,7 +20,8 @@ namespace Sonata.Security.Permissions
 		public const string ActionAjouter = "ajouter";
 		public const string ActionModifier = "modifier";
 		public const string ActionSupprimer = "supprimer";
-		public const string TermTarget = "Target";
+        public const string TermUser = "User";
+        public const string TermTarget = "Target";
 		public const string TermAction = "Action";
 		public const string TermEntity = "Entity";
 
@@ -77,6 +78,7 @@ namespace Sonata.Security.Permissions
 			}
 			catch (Exception ex)
 			{
+                Reset();
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
 				throw;
 			}
@@ -133,7 +135,8 @@ namespace Sonata.Security.Permissions
 			}
 			catch (Exception ex)
 			{
-				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+                Reset();
+                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
 				throw;
 			}
 		}
@@ -322,7 +325,6 @@ namespace Sonata.Security.Permissions
 		{
 			var solutions = Solve(DefaultRuleName,
 				request.User,
-				null,
 				request.Target,
 				request.Entity,
 				TermAction);
@@ -435,14 +437,6 @@ namespace Sonata.Security.Permissions
 		#endregion
 
 		#region Helpers
-
-		//protected static void QuotePermissionRequest(ref PermissionRequest request)
-		//{
-		//	request.Target = request.Target.DoubleQuote();
-		//	request.Entity = request.Entity.DoubleQuote();
-		//	request.Action = request.Action.DoubleQuote();
-		//	request.User = request.User.DoubleQuote();
-		//}
 
 		private static void AssertIsNotNull(string value, string propertyName)
 		{

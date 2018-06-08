@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "NuGet", "NuGet", "{A305DBD1
 	ProjectSection(SolutionItems) = preProject
 		NuGet\Build.bat = NuGet\Build.bat
 		NuGet\sonata-security.png = NuGet\sonata-security.png
-		NuGet\Sonata.Security 3.1.7.nuspec = NuGet\Sonata.Security 3.1.7.nuspec
+		NuGet\Sonata.Security 3.1.8.nuspec = NuGet\Sonata.Security 3.1.8.nuspec
 	EndProjectSection
 EndProject
 Global
