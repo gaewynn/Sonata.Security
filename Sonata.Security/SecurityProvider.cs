@@ -5,8 +5,6 @@
 using Sonata.Security.Principal;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 
 namespace Sonata.Security
 {
@@ -28,6 +26,7 @@ namespace Sonata.Security
 		/// A list of providers already registered. This list tracks the providers registered to ensure they are only registered once.
 		/// </summary>
 		private static readonly List<string> ProvidersSet = new List<string>();
+		private static readonly object Lock = new object();
 
 		#endregion
 
@@ -82,12 +81,13 @@ namespace Sonata.Security
 
 			System.Diagnostics.Trace.WriteLine($"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - [{System.Threading.Thread.CurrentThread.ManagedThreadId}] - {message}");
 
+#if DEBUG
 			lock (Lock)
 			{
-				File.AppendAllLines(@"C:\Temp\Sonata.Security.log", new List<string>{ $"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - [{System.Threading.Thread.CurrentThread.ManagedThreadId}] - {message}" });
+				System.IO.File.AppendAllLines(@"C:\Temp\Sonata.Security.log", new List<string>{ $"{DateTime.Now:HH:mm:ss} - [Sonata.Security] - [{System.Threading.Thread.CurrentThread.ManagedThreadId}] - {message}" });
 			}
+#endif
 		}
-		private static readonly object Lock = new object();
 
 		#endregion
 	}

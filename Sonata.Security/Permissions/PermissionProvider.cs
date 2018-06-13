@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace Sonata.Security.Permissions
 {
-    public class PermissionProvider
+	public class PermissionProvider
 	{
 		#region Constants
 
@@ -20,8 +20,8 @@ namespace Sonata.Security.Permissions
 		public const string ActionAjouter = "ajouter";
 		public const string ActionModifier = "modifier";
 		public const string ActionSupprimer = "supprimer";
-        public const string TermUser = "User";
-        public const string TermTarget = "Target";
+		public const string TermUser = "User";
+		public const string TermTarget = "Target";
 		public const string TermAction = "Action";
 		public const string TermEntity = "Entity";
 
@@ -31,24 +31,22 @@ namespace Sonata.Security.Permissions
 
 		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
 		private readonly List<TermType> _solveResultsRefiners = new List<TermType> { TermType.Atom, TermType.String, TermType.Number };
-		private readonly string _factsFileFullName;
-		private readonly string _rulesFileFullName;
+		private readonly string[] _prologFilesFullNames;
 		private readonly PrologEngine _prologEngine;
 
 		#endregion
 
 		#region Constructors
 
-		public PermissionProvider(string factsFileFullName, string rulesFileFullName)
+		public PermissionProvider(params string[] prologFilesFullNames)
 		{
-			_factsFileFullName = factsFileFullName;
-			_rulesFileFullName = rulesFileFullName;
+			_prologFilesFullNames = prologFilesFullNames;
 			_prologEngine = new PrologEngine(false);
 
 			Reset();
 
-			SecurityProvider.Trace($"Facts file: {_factsFileFullName}");
-			SecurityProvider.Trace($"Rules file: {_rulesFileFullName}");
+			foreach (var prologFile in prologFilesFullNames)
+				SecurityProvider.Trace($"Rule file: {prologFile}");
 		}
 
 		#endregion
@@ -78,7 +76,7 @@ namespace Sonata.Security.Permissions
 			}
 			catch (Exception ex)
 			{
-                Reset();
+				Reset();
 				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
 				throw;
 			}
@@ -135,86 +133,86 @@ namespace Sonata.Security.Permissions
 			}
 			catch (Exception ex)
 			{
-                Reset();
-                SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
+				Reset();
+				SecurityProvider.Trace($"   Error: {ex.GetFullMessage()}");
 				throw;
 			}
 		}
 
-		public virtual void AddFact(string fact)
-		{
-			SecurityProvider.Trace($"Call to {nameof(AddFact)}");
-			SecurityProvider.Trace($"   Adding fact: {fact}");
+		//public virtual void AddFact(string fact)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(AddFact)}");
+		//	SecurityProvider.Trace($"   Adding fact: {fact}");
 
-			AddFacts(new List<string> { fact });
-		}
+		//	AddFacts(new List<string> { fact });
+		//}
 
-		public virtual void AddFacts(IEnumerable<string> facts)
-		{
-			SecurityProvider.Trace($"Call to {nameof(AddFacts)}");
+		//public virtual void AddFacts(IEnumerable<string> facts)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(AddFacts)}");
 
-			if (facts == null)
-				return;
+		//	if (facts == null)
+		//		return;
 
-			var addedFacts = facts as string[] ?? facts.ToArray();
-			SecurityProvider.Trace($"   Adding facts: {String.Join("; ", addedFacts)}");
+		//	var addedFacts = facts as string[] ?? facts.ToArray();
+		//	SecurityProvider.Trace($"   Adding facts: {String.Join("; ", addedFacts)}");
 
-			AddPredicates(addedFacts, _factsFileFullName);
-		}
+		//	AddPredicates(addedFacts, _factsFileFullName);
+		//}
 
-		public virtual void RemoveFact(string fact)
-		{
-			SecurityProvider.Trace($"Call to {nameof(RemoveFact)}");
-			SecurityProvider.Trace($"   Removing fact: {fact}");
+		//public virtual void RemoveFact(string fact)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(RemoveFact)}");
+		//	SecurityProvider.Trace($"   Removing fact: {fact}");
 
-			RemoveFacts(new List<string> { fact });
-		}
+		//	RemoveFacts(new List<string> { fact });
+		//}
 
-		public virtual void RemoveFacts(IEnumerable<string> facts)
-		{
-			SecurityProvider.Trace($"Call to {nameof(RemoveFacts)}");
+		//public virtual void RemoveFacts(IEnumerable<string> facts)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(RemoveFacts)}");
 
-			var removedFacts = facts as string[] ?? facts.ToArray();
-			SecurityProvider.Trace($"   Removing facts: {String.Join("; ", removedFacts)}");
+		//	var removedFacts = facts as string[] ?? facts.ToArray();
+		//	SecurityProvider.Trace($"   Removing facts: {String.Join("; ", removedFacts)}");
 
-			RemovePredicates(removedFacts, _factsFileFullName);
-		}
+		//	RemovePredicates(removedFacts, _factsFileFullName);
+		//}
 
-		public virtual void AddRule(string rule)
-		{
-			SecurityProvider.Trace($"Call to {nameof(AddRule)}");
-			SecurityProvider.Trace($"   Adding rule: {rule}");
+		//public virtual void AddRule(string rule)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(AddRule)}");
+		//	SecurityProvider.Trace($"   Adding rule: {rule}");
 
-			AddRules(new List<string> { rule });
-		}
+		//	AddRules(new List<string> { rule });
+		//}
 
-		public virtual void AddRules(IEnumerable<string> rules)
-		{
-			SecurityProvider.Trace($"Call to {nameof(AddRules)}");
+		//public virtual void AddRules(IEnumerable<string> rules)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(AddRules)}");
 
-			var addedRules = rules as string[] ?? rules.ToArray();
-			SecurityProvider.Trace($"   Adding rules: {String.Join("; ", addedRules)}");
+		//	var addedRules = rules as string[] ?? rules.ToArray();
+		//	SecurityProvider.Trace($"   Adding rules: {String.Join("; ", addedRules)}");
 
-			AddPredicates(addedRules, _rulesFileFullName);
-		}
+		//	AddPredicates(addedRules, _rulesFileFullName);
+		//}
 
-		public virtual void RemoveRule(string rule)
-		{
-			SecurityProvider.Trace($"Call to {nameof(RemoveRule)}");
-			SecurityProvider.Trace($"   Removing rule: {rule}");
+		//public virtual void RemoveRule(string rule)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(RemoveRule)}");
+		//	SecurityProvider.Trace($"   Removing rule: {rule}");
 
-			RemoveRules(new List<string> { rule });
-		}
+		//	RemoveRules(new List<string> { rule });
+		//}
 
-		public virtual void RemoveRules(IEnumerable<string> rules)
-		{
-			SecurityProvider.Trace($"Call to {nameof(RemoveRules)}");
+		//public virtual void RemoveRules(IEnumerable<string> rules)
+		//{
+		//	SecurityProvider.Trace($"Call to {nameof(RemoveRules)}");
 
-			var removedRules = rules as string[] ?? rules.ToArray();
-			SecurityProvider.Trace($"   Removing rules: {String.Join("; ", removedRules)}");
+		//	var removedRules = rules as string[] ?? rules.ToArray();
+		//	SecurityProvider.Trace($"   Removing rules: {String.Join("; ", removedRules)}");
 
-			RemovePredicates(removedRules, _rulesFileFullName);
-		}
+		//	RemovePredicates(removedRules, _rulesFileFullName);
+		//}
 
 		public virtual bool IsAuthorized(PermissionRequest request)
 		{
@@ -385,8 +383,9 @@ namespace Sonata.Security.Permissions
 		private void Reset()
 		{
 			_prologEngine.Reset();
-			_prologEngine.Consult(_factsFileFullName);
-			_prologEngine.Consult(_rulesFileFullName);
+
+			foreach (var prologFile in _prologFilesFullNames)
+				_prologEngine.Consult(prologFile);
 		}
 
 		private void AddPredicates(IEnumerable<string> predicates, string file)
