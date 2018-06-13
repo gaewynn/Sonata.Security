@@ -30,6 +30,7 @@ namespace Sonata.Security.Permissions
 		#region Members
 
 		protected readonly List<string> Actions = new List<string> { ActionLecture, ActionAjouter, ActionModifier, ActionSupprimer };
+		private readonly object _lock = new object();
 		private readonly List<TermType> _solveResultsRefiners = new List<TermType> { TermType.Atom, TermType.String, TermType.Number };
 		private readonly string[] _prologFilesFullNames;
 		private readonly PrologEngine _prologEngine;
@@ -68,11 +69,14 @@ namespace Sonata.Security.Permissions
 				var goal = BuildPredicate(ruleName, arguments);
 				SecurityProvider.Trace($"   Running predicate: {goal}");
 
-				var result = _prologEngine.GetFirstSolution(goal);
-				if (_prologEngine.Error)
-					throw new InvalidOperationException(result.ToString());
+				lock (_lock)
+				{
+					var result = _prologEngine.GetFirstSolution(goal);
+					if (_prologEngine.Error)
+						throw new InvalidOperationException(result.ToString());
 
-				return result.Solved;
+					return result.Solved;
+				}
 			}
 			catch (Exception ex)
 			{
@@ -110,26 +114,29 @@ namespace Sonata.Security.Permissions
 				var goal = BuildPredicate(predicate, terms);
 				SecurityProvider.Trace($"   Running predicate: {goal}");
 
-				var solveResults = _prologEngine.GetAllSolutions(goal);
-				if (solveResults.HasError)
-					throw new InvalidOperationException($"Error solving predicate {goal}: {solveResults.ErrMsg}");
+				lock (_lock)
+				{
+					var solveResults = _prologEngine.GetAllSolutions(goal);
+					if (solveResults.HasError)
+						throw new InvalidOperationException($"Error solving predicate {goal}: {solveResults.ErrMsg}");
 
-				if (!solveResults.Success)
-					return new List<Solution>();
+					if (!solveResults.Success)
+						return new List<Solution>();
 
-				var solutions = solveResults.NextSolution
-					.Select(solution => new Solution(solution.NextVariable
-						.Select(variable => new Term
-						{
-							Type = variable.Type,
-							Name = variable.Name,
-							Value = variable.Value?.Trim('\'').Trim('"')
-						})));
+					var solutions = solveResults.NextSolution
+						.Select(solution => new Solution(solution.NextVariable
+							.Select(variable => new Term
+							{
+								Type = variable.Type,
+								Name = variable.Name,
+								Value = variable.Value?.Trim('\'').Trim('"')
+							})));
 
-				return refineResults
-					? solutions.Where(e =>
-						e.Any(t => _solveResultsRefiners.Contains((TermType)Enum.Parse(typeof(TermType), t.Type, true))))
-					: solutions;
+					return refineResults
+						? solutions.Where(e =>
+							e.Any(t => _solveResultsRefiners.Contains((TermType)Enum.Parse(typeof(TermType), t.Type, true))))
+						: solutions;
+				}
 			}
 			catch (Exception ex)
 			{
