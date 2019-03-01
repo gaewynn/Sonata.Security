@@ -86,26 +86,28 @@ namespace Sonata.Security.Permissions
 			}
 		}
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="predicate"></param>
-		/// <param name="terms">All constants must be rounded with a double quote when calling this methods. The method AsPrologConstant could be used.</param>
-		/// <returns></returns>
-		public virtual IEnumerable<Solution> Solve(string predicate, params string[] terms)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="maxSolutionCount">The maximum number of solutions to return</param>
+        /// <param name="terms">All constants must be rounded with a double quote when calling this methods. The method AsPrologConstant could be used.</param>
+        /// <returns></returns>
+        public virtual IEnumerable<Solution> Solve(string predicate, int maxSolutionCount = int.MaxValue, params string[] terms)
 		{
 			SecurityProvider.Trace($"Call to {nameof(Solve)}({predicate}, {(terms == null ? "null" : String.Join(", ", terms))})");
-			return Solve(true, predicate, terms);
+			return Solve(true, predicate, maxSolutionCount, terms);
 		}
 
-		/// <summary>
-		/// Evaluate a partially bound predicate (with Prolog variables) and returns the solutions as a collection of dictionaries.
-		/// </summary>
-		/// <param name="refineResults"></param>
-		/// <param name="predicate"></param>
-		/// <param name="terms">All constants must be rounded with a double quote when calling this methods. The method AsPrologConstant could be used.</param>
-		/// <returns></returns>
-		public virtual IEnumerable<Solution> Solve(bool refineResults, string predicate, params string[] terms)
+	    /// <summary>
+	    /// Evaluate a partially bound predicate (with Prolog variables) and returns the solutions as a collection of dictionaries.
+	    /// </summary>
+	    /// <param name="refineResults"></param>
+	    /// <param name="predicate"></param>
+	    /// <param name="maxSolutionCount">The maximum number of solutions to return</param>
+	    /// <param name="terms">All constants must be rounded with a double quote when calling this methods. The method AsPrologConstant could be used.</param>
+	    /// <returns></returns>
+	    public virtual IEnumerable<Solution> Solve(bool refineResults, string predicate, int maxSolutionCount = int.MaxValue, params string[] terms)
 		{
 			SecurityProvider.Trace($"Call to {nameof(Solve)}");
 
@@ -116,7 +118,7 @@ namespace Sonata.Security.Permissions
 
 				lock (_lock)
 				{
-					var solveResults = _prologEngine.GetAllSolutions(goal);
+                    var solveResults = _prologEngine.GetAllSolutions(goal, maxSolutionCount);
 					if (solveResults.HasError)
 						throw new InvalidOperationException($"Error solving predicate {goal}: {solveResults.ErrMsg}");
 
@@ -263,6 +265,7 @@ namespace Sonata.Security.Permissions
 				AssertIsNotNull(request.Entity, nameof(request.Entity));
 
 				var solutions = Solve(DefaultRuleName,
+                    request.MaxSolutionCount ?? int.MaxValue,
 					request.User.AsPrologConstant(),
 					TermTarget,
 					request.Entity.AsPrologConstant(),
@@ -305,7 +308,8 @@ namespace Sonata.Security.Permissions
 				};
 
 				var solutions = Solve(DefaultRuleName,
-					request.User.AsPrologConstant(),
+				    request.MaxSolutionCount ?? int.MaxValue,
+                    request.User.AsPrologConstant(),
 					request.Target == null ? request.Target : request.Target.AsPrologConstant(),
 					request.Entity.AsPrologConstant(),
 					TermAction);
@@ -329,7 +333,8 @@ namespace Sonata.Security.Permissions
 		public virtual IEnumerable<string> GetEntityTargetPermissions(PermissionRequest request)
 		{
 			var solutions = Solve(DefaultRuleName,
-				request.User,
+			    request.MaxSolutionCount ?? int.MaxValue,
+                request.User,
 				request.Target,
 				request.Entity,
 				TermAction);
@@ -358,7 +363,8 @@ namespace Sonata.Security.Permissions
 				AssertIsNotNull(request.User, nameof(request.User));
 
 				var solutions = Solve(DefaultRuleName,
-					request.User.AsPrologConstant(),
+				    request.MaxSolutionCount ?? int.MaxValue,
+                    request.User.AsPrologConstant(),
 					TermTarget,
 					TermEntity,
 					TermAction);

@@ -23,5 +23,8 @@ namespace Sonata.Security.Permissions
 
 		[DataMember(Name = "custom")]
 		public object Custom { get; set; }
+
+	    [DataMember(Name = "maxSolutionCount")]
+        public int? MaxSolutionCount { get; set; }
 	}
 }

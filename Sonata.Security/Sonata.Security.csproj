@@ -13,13 +13,12 @@
     <RepositoryType>Github</RepositoryType>
     <PackageTags>gaewynn sonata security</PackageTags>
     <NeutralLanguage>English (United States)</NeutralLanguage>
-    <Version>3.2.1</Version>
-    <AssemblyVersion>3.2.1.0</AssemblyVersion>
+    <Version>3.2.2</Version>
+    <AssemblyVersion>3.2.2.0</AssemblyVersion>
     <FileVersion>3.2.1.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Sonata.Core" Version="1.0.5" />
     <PackageReference Include="Sonata.Diagnostics" Version="2.1.0" />
     <PackageReference Include="System.Security.Principal.Windows" Version="4.5.0" />
   </ItemGroup>
