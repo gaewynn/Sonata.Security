@@ -409,7 +409,7 @@ namespace Prolog
 			{
 				foreach (FileTerm ft in Values)
 					ft.Close();
-
+                
 				Clear();
 			}
 		}

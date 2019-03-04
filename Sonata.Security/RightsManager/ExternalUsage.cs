@@ -349,7 +349,7 @@ namespace Prolog
 		public SolutionSet GetAllSolutions(string query, int maxSolutionCount)
 		{
 			SolutionSet solutions = new SolutionSet();
-
+            
 			try
 			{
 				Query = solutions.Query = query + (query.EndsWith(".") ? null : "."); // append a dot if necessary

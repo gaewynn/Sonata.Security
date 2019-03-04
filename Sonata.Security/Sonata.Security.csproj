@@ -13,8 +13,8 @@
     <RepositoryType>Github</RepositoryType>
     <PackageTags>gaewynn sonata security</PackageTags>
     <NeutralLanguage>English (United States)</NeutralLanguage>
-    <Version>3.2.2</Version>
-    <AssemblyVersion>3.2.2.0</AssemblyVersion>
+    <Version>3.2.3</Version>
+    <AssemblyVersion>3.2.3.0</AssemblyVersion>
     <FileVersion>3.2.1.0</FileVersion>
   </PropertyGroup>
 

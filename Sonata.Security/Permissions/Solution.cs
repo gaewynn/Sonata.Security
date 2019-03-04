@@ -42,4 +42,36 @@ namespace Sonata.Security.Permissions
 
 		#endregion
 	}
+
+    //public class SolutionEqualityComparer : IEqualityComparer<Solution>
+    //{
+    //    public bool Equals(Solution x, Solution y)
+    //    {
+    //        if (x == null && y == null)
+    //            return true;
+
+    //        if (x == null && y != null)
+    //            return false;
+
+    //        if (x != null && y == null)
+    //            return false;
+
+    //        if (x != null && y != null)
+    //        {
+                
+    //        }
+
+    //        var first = _expr.Invoke(x);
+    //        var sec = _expr.Invoke(y);
+    //        if (first != null && first.Equals(sec))
+    //            return true;
+    //        else
+    //            return false;
+    //    }
+
+    //    public int GetHashCode(Solution obj)
+    //    {
+    //        return obj.GetHashCode();
+    //    }
+    //}
 }
