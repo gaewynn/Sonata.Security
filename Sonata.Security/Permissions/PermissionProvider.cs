@@ -11,7 +11,7 @@ using System.Linq;
 
 namespace Sonata.Security.Permissions
 {
-    public class PermissionProvider
+    public class PermissionProvider : IDisposable
     {
         #region Constants
 
@@ -33,7 +33,7 @@ namespace Sonata.Security.Permissions
         private readonly object _lock = new object();
         private readonly List<TermType> _solveResultsRefiners = new List<TermType> { TermType.Atom, TermType.String, TermType.Number };
         private readonly string[] _prologFilesFullNames;
-        private readonly PrologEngine _prologEngine;
+        private PrologEngine _prologEngine;
 
         #endregion
 
@@ -53,6 +53,19 @@ namespace Sonata.Security.Permissions
         #endregion
 
         #region Methods
+
+        #region IDisposable Members
+
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                _prologEngine?.Reset();
+                _prologEngine = null;
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// Evaluate a predicate. The predicate can contain Prolog variables.
@@ -405,10 +418,13 @@ namespace Sonata.Security.Permissions
 
         private void Reset()
         {
-            _prologEngine.Reset();
+            lock (_lock)
+            {
+                _prologEngine?.Reset();
 
-            foreach (var prologFile in _prologFilesFullNames)
-                _prologEngine.Consult(prologFile);
+                foreach (var prologFile in _prologFilesFullNames)
+                    _prologEngine?.Consult(prologFile);
+            }
         }
 
         private void AddPredicates(IEnumerable<string> predicates, string file)
