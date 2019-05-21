@@ -21,19 +21,19 @@ namespace Sonata.Security.Permissions
 		public string Target { get; set; }
 
 		[DataMember(Name = "accessTypes")]
-		public AccessTypes AccessTypes { get; set; }
+		public AccessType.Values AccessTypes { get; set; }
 
 		[DataMember(Name = "hasCreateAccess")]
-		public bool HasCreateAccess => AccessTypes.HasFlag(AccessTypes.Create);
+		public bool HasCreateAccess => AccessTypes.HasFlag(AccessType.Values.Create);
 
 		[DataMember(Name = "hasReadAccess")]
-		public bool HasReadAccess => AccessTypes.HasFlag(AccessTypes.Read);
+		public bool HasReadAccess => AccessTypes.HasFlag(AccessType.Values.Read);
 
 		[DataMember(Name = "hasUpdateAccess")]
-		public bool HasUpdateAccess => AccessTypes.HasFlag(AccessTypes.Update);
+		public bool HasUpdateAccess => AccessTypes.HasFlag(AccessType.Values.Update);
 
 		[DataMember(Name = "hasDeleteAccess")]
-		public bool HasDeleteAccess => AccessTypes.HasFlag(AccessTypes.Delete);
+		public bool HasDeleteAccess => AccessTypes.HasFlag(AccessType.Values.Delete);
 
 		#endregion
 	}

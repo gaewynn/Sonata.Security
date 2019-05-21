@@ -16,10 +16,10 @@ namespace Sonata.Security.Permissions
         #region Constants
 
         public const string DefaultRuleName = "authorisation";
-        public const string ActionLecture = "lecture";
-        public const string ActionAjouter = "ajouter";
-        public const string ActionModifier = "modifier";
-        public const string ActionSupprimer = "supprimer";
+        public const string ActionLecture = AccessType.Read;
+        public const string ActionAjouter = AccessType.Create;
+        public const string ActionModifier = AccessType.Update;
+        public const string ActionSupprimer = AccessType.Delete;
         public const string TermUser = "User";
         public const string TermTarget = "Target";
         public const string TermAction = "Action";
@@ -76,7 +76,7 @@ namespace Sonata.Security.Permissions
         public virtual bool Eval(string ruleName = DefaultRuleName, params string[] arguments)
         {
             SecurityProvider.Trace($"Call to {nameof(Eval)}");
-
+            
             try
             {
                 var goal = BuildPredicate(ruleName, arguments);
@@ -337,7 +337,7 @@ namespace Sonata.Security.Permissions
                     TermAction);
 
                 var access = solutions
-                    .Aggregate(AccessTypes.None,
+                    .Aggregate(AccessType.Values.None,
                     (accessType, solution) => accessType | ActionToAccessType(solution.GetTermValue(TermAction)?.Trim('\'', '"')));
 
                 // Aucune Permission
@@ -400,7 +400,7 @@ namespace Sonata.Security.Permissions
                         Entity = accessGroup.Key.Entity,
                         AccessTypes = accessGroup
                             .Select(solution => solution.GetTermValue(TermAction)?.Trim('\'', '"'))
-                            .Aggregate(AccessTypes.None, (accessType, action) => accessType | ActionToAccessType(action))
+                            .Aggregate(AccessType.Values.None, (accessType, action) => accessType | ActionToAccessType(action))
                     });
             }
             catch (Exception ex)
@@ -486,15 +486,15 @@ namespace Sonata.Security.Permissions
             }
         }
 
-        private static AccessTypes ActionToAccessType(string action)
+        private static AccessType.Values ActionToAccessType(string action)
         {
             switch (action)
             {
-                case ActionLecture: return AccessTypes.Read;
-                case ActionAjouter: return AccessTypes.Create;
-                case ActionModifier: return AccessTypes.Update;
-                case ActionSupprimer: return AccessTypes.Delete;
-                default: return AccessTypes.None;
+                case ActionLecture: return AccessType.Values.Read;
+                case ActionAjouter: return AccessType.Values.Create;
+                case ActionModifier: return AccessType.Values.Update;
+                case ActionSupprimer: return AccessType.Values.Delete;
+                default: return AccessType.Values.None;
             }
         }
 

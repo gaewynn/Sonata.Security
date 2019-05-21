@@ -263,7 +263,7 @@ namespace Sonata.Security.Tests.Permissions
 
 				Assert.Equal("stuff", permission.Entity);
 				Assert.Null(permission.Target);
-				Assert.Equal(AccessTypes.Read | AccessTypes.Update, permission.AccessTypes);
+				Assert.Equal(AccessType.Values.Read | AccessType.Values.Update, permission.AccessTypes);
 			}
 
 			#endregion
